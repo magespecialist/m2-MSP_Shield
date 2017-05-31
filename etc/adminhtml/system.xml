@@ -32,11 +32,11 @@
                 </field>
                 <field id="min_impact_log" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Minimum impact score to log event</label>
-                    <comment>0 to disable</comment>
+                    <comment>0 to disable, suggested value: 3</comment>
                 </field>
                 <field id="min_impact_stop" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Minimum impact score to stop action</label>
-                    <comment>0 to disable (WARNING: This module is still at beta level, do not use in production)</comment>
+                    <comment>0 to disable, suggested level: 6 (WARNING: This module is still at beta level, do not use in production)</comment>
                 </field>
             </group>
         </section>

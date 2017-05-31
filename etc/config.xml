@@ -26,7 +26,7 @@
             <shield>
                 <enabled>0</enabled>
                 <min_impact_log>3</min_impact_log>
-                <min_impact_stop>4</min_impact_stop>
+                <min_impact_stop>6</min_impact_stop>
             </shield>
         </msp_securitysuite>
     </default>
