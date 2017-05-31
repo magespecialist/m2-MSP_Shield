@@ -16,12 +16,6 @@
             "email": "riccardo.tempesta@magespecialist.it"
         }
     ],
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/magespecialist/PHPIDS"
-        }
-    ],
     "type": "magento2-module",
     "license": "OSL 3.0",
     "autoload": {
