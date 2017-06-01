@@ -24,10 +24,9 @@ interface ShieldInterface
 {
     /**
      * Return true if should scan request
-     * @param \Magento\Framework\App\RequestInterface $request
      * @return bool
      */
-    public function shouldScan(\Magento\Framework\App\RequestInterface $request);
+    public function shouldScan();
 
     /**
      * Scan HTTP request and return false if no hack attempt has been detected

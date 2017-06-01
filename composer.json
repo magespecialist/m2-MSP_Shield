@@ -3,9 +3,9 @@
     "description": "Advanced Intrusion Prevention System for Magento2 - Member of MageSpecialist SecuritySuite",
     "require": {
         "php": "~7.0.0",
-        "msp/phpids": "*",
+        "msp/phpids": ">=1.0.1",
         "msp/common": "*",
-        "msp/security-suite-common": "*"
+        "msp/security-suite-common": ">=1.0.3"
     },
     "suggest": {
         "msp/security-suite": "Full MageSpecialist Security Suite"

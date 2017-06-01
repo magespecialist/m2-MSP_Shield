@@ -24,6 +24,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Module\Dir\Reader;
 use Magento\Framework\App\DeploymentConfig\Reader as DeploymentConfigReader;
+use MSP\SecuritySuiteCommon\Api\UtilsInterface;
 use MSP\Shield\Api\ShieldInterface;
 
 class Shield implements ShieldInterface
@@ -59,42 +60,46 @@ class Shield implements ShieldInterface
      */
     private $configReader;
 
+    /**
+     * @var UtilsInterface
+     */
+    private $utils;
+
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         Reader $reader,
         Cache $cache,
         DirectoryList $directoryList,
-        DeploymentConfigReader $configReader
+        UtilsInterface $utils
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->directoryList = $directoryList;
         $this->reader = $reader;
         $this->cache = $cache;
-        $this->configReader = $configReader;
+        $this->utils = $utils;
     }
 
     /**
      * Return true if should scan request
-     * @param \Magento\Framework\App\RequestInterface $request
      * @return bool
      */
-    public function shouldScan(\Magento\Framework\App\RequestInterface $request)
+    public function shouldScan()
     {
-        $config = $this->configReader->load();
-        $adminPath = $config['backend']['frontName'];
-
         $enabledBackend = !! $this->scopeConfig->getValue(static::XML_PATH_ENABLED_BACKEND);
-        if ((strpos($request->getRequestUri(), "/$adminPath/") !== false) && !$enabledBackend) {
+        if ($this->utils->isBackendUri() && !$enabledBackend) {
             return false;
         }
+
+        $adminPath = $this->utils->getBackendPath();
 
         $whiteList = trim($this->scopeConfig->getValue(static::XML_PATH_URI_WHITELIST));
         $whiteList = str_replace('$admin', $adminPath, $whiteList);
         $whiteList = preg_split('/[\r\n\s,]+/', $whiteList);
         $whiteList[] = '/msp_security_suite/stop/index/';
 
+        $requestUri = $this->utils->getSanitizedUri();
         foreach ($whiteList as $uri) {
-            if (strpos($request->getRequestUri(), $uri) !== false) {
+            if (strpos($requestUri, $uri) === 0) {
                 return false;
             }
         }
