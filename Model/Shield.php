@@ -23,13 +23,16 @@ namespace MSP\Shield\Model;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Module\Dir\Reader;
+use Magento\Framework\App\DeploymentConfig\Reader as DeploymentConfigReader;
 use MSP\Shield\Api\ShieldInterface;
 
 class Shield implements ShieldInterface
 {
     const XML_PATH_ENABLED = 'msp_securitysuite/shield/enabled';
+    const XML_PATH_ENABLED_BACKEND = 'msp_securitysuite/shield/enabled_backend';
     const XML_PATH_MIN_IMPACT_LOG = 'msp_securitysuite/shield/min_impact_log';
     const XML_PATH_MIN_IMPACT_STOP = 'msp_securitysuite/shield/min_impact_stop';
+    const XML_PATH_URI_WHITELIST = 'msp_securitysuite/shield/uri_whitelist';
 
     /**
      * @var ScopeConfigInterface
@@ -51,16 +54,52 @@ class Shield implements ShieldInterface
      */
     private $cache;
 
+    /**
+     * @var DeploymentConfigReader
+     */
+    private $configReader;
+
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         Reader $reader,
         Cache $cache,
-        DirectoryList $directoryList
+        DirectoryList $directoryList,
+        DeploymentConfigReader $configReader
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->directoryList = $directoryList;
         $this->reader = $reader;
         $this->cache = $cache;
+        $this->configReader = $configReader;
+    }
+
+    /**
+     * Return true if should scan request
+     * @param \Magento\Framework\App\RequestInterface $request
+     * @return bool
+     */
+    public function shouldScan(\Magento\Framework\App\RequestInterface $request)
+    {
+        $config = $this->configReader->load();
+        $adminPath = $config['backend']['frontName'];
+
+        $enabledBackend = !! $this->scopeConfig->getValue(static::XML_PATH_ENABLED_BACKEND);
+        if ((strpos($request->getRequestUri(), "/$adminPath/") !== false) && !$enabledBackend) {
+            return false;
+        }
+
+        $whiteList = trim($this->scopeConfig->getValue(static::XML_PATH_URI_WHITELIST));
+        $whiteList = str_replace('$admin', $adminPath, $whiteList);
+        $whiteList = preg_split('/[\r\n\s,]+/', $whiteList);
+        $whiteList[] = '/msp_security_suite/stop/index/';
+
+        foreach ($whiteList as $uri) {
+            if (strpos($request->getRequestUri(), $uri) !== false) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -71,6 +110,7 @@ class Shield implements ShieldInterface
     {
         $request = [
             'REQUEST' => $_REQUEST,
+            'COOKIE' => $_COOKIE,
         ];
 
         $tmpPath = $this->directoryList->getPath(DirectoryList::TMP);

@@ -30,13 +30,22 @@
                     <label>Enable</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="min_impact_log" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="enabled_backend" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enable in Magento backend</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>WARNING: Backend features may trigger false positives, we suggest you to protect backend with MSP_AdminRestriction module</comment>
+                </field>
+                <field id="min_impact_log" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Minimum impact score to log event</label>
                     <comment>0 to disable, suggested value: 3</comment>
                 </field>
-                <field id="min_impact_stop" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="min_impact_stop" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Minimum impact score to stop action</label>
-                    <comment>0 to disable, suggested level: 6 (WARNING: This module is still at beta level, do not use in production)</comment>
+                    <comment>0 to disable, suggested level: 6</comment>
+                </field>
+                <field id="uri_whitelist" translate="label" type="textarea" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>URI Whitelist</label>
+                    <comment>One URI per line. Use "$admin" for admin backend base URI</comment>
                 </field>
             </group>
         </section>

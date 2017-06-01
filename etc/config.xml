@@ -25,8 +25,16 @@
         <msp_securitysuite>
             <shield>
                 <enabled>0</enabled>
+                <enabled_backend>0</enabled_backend>
                 <min_impact_log>3</min_impact_log>
                 <min_impact_stop>6</min_impact_stop>
+                <uri_whitelist>/$admin/cms/page/save
+/$admin/cms/block/save
+/$admin/widget_instance/validate
+/$admin/widget_instance/save
+/$admin/catalog/product/save
+/$admin/catalog/category/save
+</uri_whitelist>
             </shield>
         </msp_securitysuite>
     </default>

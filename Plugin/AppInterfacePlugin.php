@@ -28,7 +28,6 @@ use Magento\Framework\UrlInterface;
 use MSP\SecuritySuiteCommon\Api\LogManagementInterface;
 use MSP\Shield\Api\ShieldInterface;
 use Magento\Framework\Event\ManagerInterface as EventInterface;
-use function Pulsestorm\Cli\Monty_Hall_Problem\switchDoor;
 
 class AppInterfacePlugin
 {
@@ -79,20 +78,11 @@ class AppInterfacePlugin
         $this->event = $event;
     }
 
-    protected function shouldCheck()
-    {
-        if (strpos($this->request->getRequestUri(), '/msp_security_suite/stop/index/') !== false) {
-            return false; // Avoid error page to be checked and avoid recursion
-        }
-
-        return true;
-    }
-
     public function aroundLaunch(AppInterface $subject, \Closure $proceed)
     {
         // We are creating a plugin for AppInterface to make sure we can perform an IDS scan early in the code.
         // A predispatch observer is not an option.
-        if ($this->shield->isEnabled() && $this->shouldCheck()) {
+        if ($this->shield->isEnabled() && $this->shield->shouldScan($this->request)) {
             $res = $this->shield->scanRequest();
 
             if ($res) {
