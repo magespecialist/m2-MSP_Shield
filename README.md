@@ -36,7 +36,7 @@ NOTE: Enabling this module for backend can trigger false positives, we strongly 
 MSP Shield can detect a wide number of PHP attack patterns and attack attempts.<br />
 You can test it in any Magento 2 form by typing a malicious request.<br />
 <br />
-For example you can try typing "; drop database magento" in any form.<br />
+For example you can try typing `; drop database magento` in any form.<br />
 <br />
 This will simulate a **SQL injection attack**. Magento is already protected against this kind of attack, but you can try it
 to verify the correct configuration of MSP Shield.
@@ -50,7 +50,7 @@ If you correctly installed and configured MSP Shield, an emergency stop screen w
 
 ## Hack Attempt detected
 
-<img src="https://raw.githubusercontent.com/magespecialist/m2-MSP_Shield/master/screenshots/injection_attempt.png" />
+<img src="https://raw.githubusercontent.com/magespecialist/m2-MSP_Shield/master/screenshots/detected.png" />
 
 ## Logged entries ##
 
