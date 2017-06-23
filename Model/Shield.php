@@ -23,7 +23,6 @@ namespace MSP\Shield\Model;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Module\Dir\Reader;
-use Magento\Framework\App\DeploymentConfig\Reader as DeploymentConfigReader;
 use MSP\SecuritySuiteCommon\Api\UtilsInterface;
 use MSP\Shield\Api\ShieldInterface;
 
@@ -34,6 +33,7 @@ class Shield implements ShieldInterface
     const XML_PATH_MIN_IMPACT_LOG = 'msp_securitysuite/shield/min_impact_log';
     const XML_PATH_MIN_IMPACT_STOP = 'msp_securitysuite/shield/min_impact_stop';
     const XML_PATH_URI_WHITELIST = 'msp_securitysuite/shield/uri_whitelist';
+    const XML_PATH_COOKIE_WHITELIST = 'msp_securitysuite/shield/cookie_whitelist';
 
     /**
      * @var ScopeConfigInterface
@@ -54,11 +54,6 @@ class Shield implements ShieldInterface
      * @var Cache
      */
     private $cache;
-
-    /**
-     * @var DeploymentConfigReader
-     */
-    private $configReader;
 
     /**
      * @var UtilsInterface
@@ -113,9 +108,19 @@ class Shield implements ShieldInterface
      */
     public function scanRequest()
     {
+        $cookieWhiteList = trim($this->scopeConfig->getValue(static::XML_PATH_COOKIE_WHITELIST));
+        $cookieWhiteList = preg_split('/[\r\n\s,]+/', $cookieWhiteList);
+
+        $cookiePayload = [];
+        foreach ($_COOKIE as $k => $v) {
+            if (!in_array($k, $cookieWhiteList)) {
+                $cookiePayload[$k] = $v;
+            }
+        }
+
         $request = [
             'REQUEST' => $_REQUEST,
-            'COOKIE' => $_COOKIE,
+            'COOKIE' => $cookiePayload,
         ];
 
         $tmpPath = $this->directoryList->getPath(DirectoryList::TMP);

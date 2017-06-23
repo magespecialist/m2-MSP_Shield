@@ -83,7 +83,7 @@ class AppInterfacePlugin
         // We are creating a plugin for AppInterface to make sure we can perform an IDS scan early in the code.
         // A predispatch observer is not an option.
         if ($this->shield->isEnabled() && $this->shield->shouldScan($this->request)) {
-            $res = $this->shield->scanRequest();
+            $res = html_entity_decode($this->shield->scanRequest());
 
             if ($res) {
                 $tags = implode(', ', $res->getTags());
