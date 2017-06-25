@@ -43,9 +43,6 @@ to verify the correct configuration of MSP Shield.
 
 <img src="https://raw.githubusercontent.com/magespecialist/m2-MSP_Shield/master/screenshots/injection_attempt.png" />
 
-**Test method:**
-Type the below eicar test signature in Magento customer login as password:
-
 If you correctly installed and configured MSP Shield, an emergency stop screen will appear.
 
 ## Hack Attempt detected
