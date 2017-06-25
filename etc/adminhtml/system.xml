@@ -43,11 +43,11 @@
                     <label>Minimum impact score to stop action</label>
                     <comment>0 to disable, suggested level: 6</comment>
                 </field>
-                <field id="cookie_whitelist" translate="label" type="textarea" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Magento cookie whitelist</label>
-                    <comment>One cookie name per line</comment>
+                <field id="params_whitelist" translate="label" type="textarea" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Parameters whitelist whitelist</label>
+                    <comment>One param name per line (e.g.: GET.paramname, COOKIE.paramname, POST.paramname)</comment>
                 </field>
-                <field id="uri_whitelist" translate="label" type="textarea" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="uri_whitelist" translate="label" type="textarea" sortOrder="80" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>URI Whitelist</label>
                     <comment>One URI per line. Use "$admin" for admin backend base URI</comment>
                 </field>

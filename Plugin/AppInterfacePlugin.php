@@ -83,7 +83,7 @@ class AppInterfacePlugin
         // We are creating a plugin for AppInterface to make sure we can perform an IDS scan early in the code.
         // A predispatch observer is not an option.
         if ($this->shield->isEnabled() && $this->shield->shouldScan($this->request)) {
-            $res = html_entity_decode($this->shield->scanRequest());
+            $res = $this->shield->scanRequest();
 
             if ($res) {
                 $tags = implode(', ', $res->getTags());
@@ -101,7 +101,7 @@ class AppInterfacePlugin
                         'module' => 'MSP_Shield',
                         'message' => $tags . ' (impact ' . $res->getImpact() . ')',
                         'action' => $stopAction ? 'stop' : 'log',
-                        'additional' => ''.$res,
+                        'additional' => html_entity_decode(''.$res),
                     ]);
                 }
 

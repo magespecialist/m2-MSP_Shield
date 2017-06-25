@@ -33,7 +33,7 @@ class Shield implements ShieldInterface
     const XML_PATH_MIN_IMPACT_LOG = 'msp_securitysuite/shield/min_impact_log';
     const XML_PATH_MIN_IMPACT_STOP = 'msp_securitysuite/shield/min_impact_stop';
     const XML_PATH_URI_WHITELIST = 'msp_securitysuite/shield/uri_whitelist';
-    const XML_PATH_COOKIE_WHITELIST = 'msp_securitysuite/shield/cookie_whitelist';
+    const XML_PATH_PARAMS_WHITELIST = 'msp_securitysuite/shield/params_whitelist';
 
     /**
      * @var ScopeConfigInterface
@@ -103,25 +103,53 @@ class Shield implements ShieldInterface
     }
 
     /**
+     * Get filtered request by arg type
+     * @param string $type
+     * @param array $originalRequest
+     * @param array $whitelist
+     * @return array
+     */
+    protected function getFilteredRequestArg($type, $originalRequest, $whitelist)
+    {
+        $res = [];
+
+        foreach ($originalRequest as $k => $v) {
+            if (!in_array(strtolower($type . '.' . $k), $whitelist)) {
+                $res[$k] = $v;
+            }
+        }
+
+        return $res;
+    }
+
+    /**
+     * Get filtered request without whitelisted parameters
+     * @return array|false
+     */
+    protected function getFilteredRequest()
+    {
+        $paramsWhiteList = trim(strtolower($this->scopeConfig->getValue(static::XML_PATH_PARAMS_WHITELIST)));
+        $paramsWhiteList = preg_split('/[\r\n\s,]+/', $paramsWhiteList);
+
+        $request = [
+            'GET' => $this->getFilteredRequestArg('GET', $_GET, $paramsWhiteList),
+            'POST' => $this->getFilteredRequestArg('POST', $_POST, $paramsWhiteList),
+            'COOKIE' => $this->getFilteredRequestArg('COOKIE', $_COOKIE, $paramsWhiteList),
+        ];
+
+        return count($request['GET']) || count($request['POST']) || count($request['COOKIE']) ? $request : false;
+    }
+
+    /**
      * Scan HTTP request and return false if no hack attempt has been detected
      * @return \IDS\Report|false
      */
     public function scanRequest()
     {
-        $cookieWhiteList = trim($this->scopeConfig->getValue(static::XML_PATH_COOKIE_WHITELIST));
-        $cookieWhiteList = preg_split('/[\r\n\s,]+/', $cookieWhiteList);
-
-        $cookiePayload = [];
-        foreach ($_COOKIE as $k => $v) {
-            if (!in_array($k, $cookieWhiteList)) {
-                $cookiePayload[$k] = $v;
-            }
+        $request = $this->getFilteredRequest();
+        if (!$request) {
+            return false;
         }
-
-        $request = [
-            'REQUEST' => $_REQUEST,
-            'COOKIE' => $cookiePayload,
-        ];
 
         $tmpPath = $this->directoryList->getPath(DirectoryList::TMP);
 
@@ -129,10 +157,6 @@ class Shield implements ShieldInterface
         $init->config['General']['tmp_path'] = $tmpPath;
         $init->config['General']['filter_type'] = 'xml';
         $init->config['General']['scan_keys'] = false;
-        $init->config['exceptions'] = [
-            'GET.__utmz',
-            'GET.__utmc'
-        ];
         $init->config['General']['filter_path'] =
             $this->reader->getModuleDir('etc', 'MSP_Shield') . '/ids_filter.xml';
 
