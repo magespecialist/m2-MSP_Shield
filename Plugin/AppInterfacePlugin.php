@@ -24,6 +24,7 @@ use Magento\Framework\App\State;
 use Magento\Framework\AppInterface;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Response\Http;
+use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\UrlInterface;
 use MSP\SecuritySuiteCommon\Api\LogManagementInterface;
 use MSP\Shield\Api\ShieldInterface;
@@ -61,6 +62,11 @@ class AppInterfacePlugin
      */
     private $event;
 
+    /**
+     * @var ObjectManagerInterface
+     */
+    private $objectManager;
+
 
     public function __construct(
         RequestInterface $request,
@@ -68,7 +74,8 @@ class AppInterfacePlugin
         UrlInterface $url,
         State $state,
         ShieldInterface $shield,
-        EventInterface $event
+        EventInterface $event,
+        ObjectManagerInterface $objectManager
     ) {
         $this->request = $request;
         $this->http = $http;
@@ -76,6 +83,7 @@ class AppInterfacePlugin
         $this->state = $state;
         $this->shield = $shield;
         $this->event = $event;
+        $this->objectManager = $objectManager;
     }
 
     public function aroundLaunch(AppInterface $subject, \Closure $proceed)
@@ -107,9 +115,12 @@ class AppInterfacePlugin
 
                 if ($stopAction) {
                     $this->state->setAreaCode('frontend');
-                    $this->http->setRedirect($this->url->getUrl('msp_security_suite/stop', [
-                        'reason' => 'Hack Attempt detected',
-                    ]));
+
+                    // Must use object manager because a session cannot be activated before setting area
+                    $this->objectManager->get('MSP\SecuritySuiteCommon\Api\SessionInterface')
+                        ->setEmergencyStopMessage(__('Hack Attempt or Suspicious Activity detected'));
+
+                    $this->http->setRedirect($this->url->getUrl('msp_security_suite/stop/index'));
                     return $this->http;
                 }
             }
