@@ -30,6 +30,7 @@ class Shield implements ShieldInterface
 {
     const XML_PATH_ENABLED = 'msp_securitysuite/shield/enabled';
     const XML_PATH_ENABLED_BACKEND = 'msp_securitysuite/shield/enabled_backend';
+    const XML_PATH_CHECK_COOKIES = 'msp_securitysuite/shield/check_cookies';
     const XML_PATH_MIN_IMPACT_LOG = 'msp_securitysuite/shield/min_impact_log';
     const XML_PATH_MIN_IMPACT_STOP = 'msp_securitysuite/shield/min_impact_stop';
     const XML_PATH_URI_WHITELIST = 'msp_securitysuite/shield/uri_whitelist';
@@ -128,14 +129,21 @@ class Shield implements ShieldInterface
      */
     protected function getFilteredRequest()
     {
+        $checkCookies = !!$this->scopeConfig->getValue(static::XML_PATH_CHECK_COOKIES);
+
         $paramsWhiteList = trim(strtolower($this->scopeConfig->getValue(static::XML_PATH_PARAMS_WHITELIST)));
         $paramsWhiteList = preg_split('/[\r\n\s,]+/', $paramsWhiteList);
 
         $request = [
             'GET' => $this->getFilteredRequestArg('GET', $_GET, $paramsWhiteList),
             'POST' => $this->getFilteredRequestArg('POST', $_POST, $paramsWhiteList),
-            'COOKIE' => $this->getFilteredRequestArg('COOKIE', $_COOKIE, $paramsWhiteList),
         ];
+
+        if ($checkCookies) {
+            $request['COOKIE'] = $this->getFilteredRequestArg('COOKIE', $_COOKIE, $paramsWhiteList);
+        } else {
+            $request['COOKIE'] = [];
+        }
 
         return count($request['GET']) || count($request['POST']) || count($request['COOKIE']) ? $request : false;
     }
