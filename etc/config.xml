@@ -31,6 +31,7 @@
                 <check_cookies>0</check_cookies>
                 <params_whitelist>COOKIE.mage-cache-storage
 COOKIE.mage-cache-storage-section-invalidation
+COOKIE.ls_mage-cache-storage
 COOKIE.mage-messages
 GET.__utmz
 GET.__utmc</params_whitelist>
