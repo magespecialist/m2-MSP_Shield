@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-<!--
+<?php
 /**
  * MageSpecialist
  *
@@ -18,11 +17,28 @@
  * @copyright  Copyright (c) 2017 Skeeller srl (http://www.magespecialist.it)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
--->
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="urn:magento:framework:Cache/etc/cache.xsd">
-    <type name="msp_shield" translate="label,description" instance="MSP\Shield\Model\CacheType">
-        <label>MageSpecialist Shield</label>
-        <description>Intrusion Prevention System</description>
-    </type>
-</config>
+
+namespace MSP\Shield\Model\Filter;
+
+use MSP\Shield\Api\FilterInterface;
+
+class Literal implements FilterInterface
+{
+    /**
+     * Return scanning results
+     * @param string $fieldName
+     * @param string $fieldValue
+     * @return boolean
+     */
+    public function runFilter($fieldName, $fieldValue)
+    {
+        $fieldValue = trim($fieldValue);
+
+        // Skip this field if it is only literal
+        if (!strlen($fieldValue) || preg_match('/^[\s\w\_]+$/', $fieldValue)) {
+            return FilterInterface::NO_SCAN;
+        }
+
+        return FilterInterface::NEXT_FILTER;
+    }
+}

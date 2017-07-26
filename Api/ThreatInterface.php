@@ -18,21 +18,31 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-namespace MSP\Shield\Model;
+namespace MSP\Shield\Api;
 
-use Magento\Framework\App\Cache\Type\FrontendPool;
-use Magento\Framework\Cache\Frontend\Decorator\TagScope;
-
-class CacheType extends TagScope
+interface ThreatInterface
 {
-    const TYPE_IDENTIFIER = 'msp_shield_ids';
-    const CACHE_TAG = 'MSP_SHIELD_IDS';
+    /**
+     * Get threat identification
+     * @return string
+     */
+    public function getId();
 
     /**
-     * @param FrontendPool $cacheFrontendPool
+     * Get threat score
+     * @return int
      */
-    public function __construct(FrontendPool $cacheFrontendPool)
-    {
-        parent::__construct($cacheFrontendPool->get(self::TYPE_IDENTIFIER), self::CACHE_TAG);
-    }
+    public function getScore();
+
+    /**
+     * Get a list of involved detectors
+     * @return DetectorInterface
+     */
+    public function getDetector();
+
+    /**
+     * Get reason as string
+     * @return string
+     */
+    public function getReason();
 }

@@ -24,7 +24,9 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Module\Dir\Reader;
 use MSP\SecuritySuiteCommon\Api\UtilsInterface;
+use MSP\Shield\Api\IpsInterface;
 use MSP\Shield\Api\ShieldInterface;
+use MSP\Shield\Api\ThreatInterface;
 
 class Shield implements ShieldInterface
 {
@@ -44,27 +46,27 @@ class Shield implements ShieldInterface
     private $reader;
 
     /**
-     * @var Cache
-     */
-    private $cache;
-
-    /**
      * @var UtilsInterface
      */
     private $utils;
 
+    /**
+     * @var IpsInterface
+     */
+    private $ips;
+
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         Reader $reader,
-        Cache $cache,
+        IpsInterface $ips,
         DirectoryList $directoryList,
         UtilsInterface $utils
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->directoryList = $directoryList;
         $this->reader = $reader;
-        $this->cache = $cache;
         $this->utils = $utils;
+        $this->ips = $ips;
     }
 
     /**
@@ -126,6 +128,12 @@ class Shield implements ShieldInterface
         $paramsWhiteList = trim(strtolower($this->scopeConfig->getValue(ShieldInterface::XML_PATH_PARAMS_WHITELIST)));
         $paramsWhiteList = preg_split('/[\r\n\s,]+/', $paramsWhiteList);
 
+        $_GET['ciccio'] = json_encode([
+            'abc' => serialize([1, 2, 3]),
+            'bbb' => base64_encode('pippo // è'),
+            'aaaa' => base64_encode(serialize(base64_encode('eval(base64_encode())')))
+        ]);
+
         $request = [
             'GET' => $this->getFilteredRequestArg('GET', $_GET, $paramsWhiteList),
             'POST' => $this->getFilteredRequestArg('POST', $_POST, $paramsWhiteList),
@@ -142,28 +150,18 @@ class Shield implements ShieldInterface
 
     /**
      * Scan HTTP request and return false if no hack attempt has been detected
-     * @return \IDS\Report|false
+     * @return ThreatInterface[]
      */
     public function scanRequest()
     {
         $request = $this->getFilteredRequest();
         if (!$request) {
-            return false;
+            return null;
         }
 
-        $tmpPath = $this->directoryList->getPath(DirectoryList::TMP);
+        $this->ips->scanRequest($request);
 
-        $init = \IDS\Init::init();
-        $init->config['General']['tmp_path'] = $tmpPath;
-        $init->config['General']['filter_type'] = 'xml';
-        $init->config['General']['scan_keys'] = false;
-        $init->config['General']['filter_path'] =
-            $this->reader->getModuleDir('etc', 'MSP_Shield') . '/ids_filter.xml';
-
-        $ids = new \IDS\Monitor($init, $this->cache);
-        $result = $ids->run($request);
-
-        return $result->isEmpty() ? false : $result;
+        return null;
     }
 
     /**

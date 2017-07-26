@@ -3,7 +3,6 @@
     "description": "Advanced Intrusion Prevention System for Magento2 - Member of MageSpecialist SecuritySuite",
     "require": {
         "php": "~7.0.0",
-        "msp/phpids": ">=1.0.2",
         "msp/security-suite-common": "^1.2"
     },
     "suggest": {

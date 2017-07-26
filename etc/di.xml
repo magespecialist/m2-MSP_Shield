@@ -23,6 +23,24 @@
         xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
 
     <preference for="MSP\Shield\Api\ShieldInterface" type="MSP\Shield\Model\Shield" />
+    <preference for="MSP\Shield\Api\IpsInterface" type="MSP\Shield\Model\Ips" />
+    <preference for="MSP\Shield\Api\ThreatInterface" type="MSP\Shield\Model\Threat" />
+
+    <type name="MSP\Shield\Api\IpsInterface">
+        <arguments>
+            <argument name="processors" xsi:type="array">
+                <item name="basic" xsi:type="object">MSP\Shield\Model\Processor\Basic</item>
+                <item name="unpack" xsi:type="object">MSP\Shield\Model\Processor\Unpack</item>
+            </argument>
+            <argument name="filters" xsi:type="array">
+                <item name="literal" xsi:type="object">MSP\Shield\Model\Filter\Literal</item>
+            </argument>
+            <argument name="detectors" xsi:type="array">
+                <item name="sqli" xsi:type="object">MSP\Shield\Model\Detector\Sqli</item>
+            </argument>
+        </arguments>
+    </type>
+
     <type name="Magento\Framework\AppInterface">
         <plugin sortOrder="1" name="mSPShieldAppInterface" type="MSP\Shield\Plugin\AppInterfacePlugin"/>
     </type>

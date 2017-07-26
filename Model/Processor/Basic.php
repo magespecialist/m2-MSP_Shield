@@ -18,44 +18,25 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-namespace MSP\Shield\Model;
+namespace MSP\Shield\Model\Processor;
 
-use IDS\Caching\CacheInterface;
+use MSP\Shield\Api\ProcessorInterface;
 
-class Cache implements CacheInterface
+class Basic implements ProcessorInterface
 {
-    const CACHE_KEY = 'ids';
-
     /**
-     * @var CacheType
+     * Return scanning results
+     * @param string $fieldName
+     * @param string &$fieldValue
+     * @return boolean
      */
-    private $cacheType;
-
-    public function __construct(
-        CacheType $cacheType
-    ) {
-        $this->cacheType = $cacheType;
-    }
-
-    /**
-     * Interface method
-     *
-     * @param array $data the cache data
-     *
-     * @return void
-     */
-    public function setCache(array $data)
+    public function processValue($fieldName, &$fieldValue)
     {
-        $this->cacheType->save($data, static::CACHE_KEY, [ CacheType::CACHE_TAG ], 86400);
-    }
+        if (trim($fieldValue) !== $fieldValue) {
+            $fieldValue = trim($fieldValue);
+            return true;
+        }
 
-    /**
-     * Interface method
-     *
-     * @return void
-     */
-    public function getCache()
-    {
-        $this->cacheType->load(static::CACHE_KEY);
+        return false;
     }
 }
