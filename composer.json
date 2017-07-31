@@ -4,8 +4,7 @@
     "require": {
         "php": "~7.0.0",
         "msp/phpids": ">=1.0.2",
-        "msp/common": "*",
-        "msp/security-suite-common": "^1.1"
+        "msp/security-suite-common": "^1.2"
     },
     "suggest": {
         "msp/security-suite": "Full MageSpecialist Security Suite"

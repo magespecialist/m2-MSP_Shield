@@ -22,8 +22,8 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
-        <msp_securitysuite>
-            <shield>
+        <msp_securitysuite_shield>
+            <general>
                 <enabled>0</enabled>
                 <enabled_backend>0</enabled_backend>
                 <min_impact_log>3</min_impact_log>
@@ -41,7 +41,7 @@ GET.__utmc</params_whitelist>
 /$admin/widget_instance/save
 /$admin/catalog/product/save
 /$admin/catalog/category/save</uri_whitelist>
-            </shield>
-        </msp_securitysuite>
+            </general>
+        </msp_securitysuite_shield>
     </default>
 </config>

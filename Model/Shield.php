@@ -28,14 +28,6 @@ use MSP\Shield\Api\ShieldInterface;
 
 class Shield implements ShieldInterface
 {
-    const XML_PATH_ENABLED = 'msp_securitysuite/shield/enabled';
-    const XML_PATH_ENABLED_BACKEND = 'msp_securitysuite/shield/enabled_backend';
-    const XML_PATH_CHECK_COOKIES = 'msp_securitysuite/shield/check_cookies';
-    const XML_PATH_MIN_IMPACT_LOG = 'msp_securitysuite/shield/min_impact_log';
-    const XML_PATH_MIN_IMPACT_STOP = 'msp_securitysuite/shield/min_impact_stop';
-    const XML_PATH_URI_WHITELIST = 'msp_securitysuite/shield/uri_whitelist';
-    const XML_PATH_PARAMS_WHITELIST = 'msp_securitysuite/shield/params_whitelist';
-
     /**
      * @var ScopeConfigInterface
      */
@@ -81,14 +73,14 @@ class Shield implements ShieldInterface
      */
     public function shouldScan()
     {
-        $enabledBackend = !! $this->scopeConfig->getValue(static::XML_PATH_ENABLED_BACKEND);
+        $enabledBackend = !! $this->scopeConfig->getValue(ShieldInterface::XML_PATH_ENABLED_BACKEND);
         if ($this->utils->isBackendUri() && !$enabledBackend) {
             return false;
         }
 
         $adminPath = $this->utils->getBackendPath();
 
-        $whiteList = trim($this->scopeConfig->getValue(static::XML_PATH_URI_WHITELIST));
+        $whiteList = trim($this->scopeConfig->getValue(ShieldInterface::XML_PATH_URI_WHITELIST));
         $whiteList = str_replace('$admin', $adminPath, $whiteList);
         $whiteList = preg_split('/[\r\n\s,]+/', $whiteList);
         $whiteList[] = '/msp_security_suite/stop/index/';
@@ -129,9 +121,9 @@ class Shield implements ShieldInterface
      */
     protected function getFilteredRequest()
     {
-        $checkCookies = !!$this->scopeConfig->getValue(static::XML_PATH_CHECK_COOKIES);
+        $checkCookies = !!$this->scopeConfig->getValue(ShieldInterface::XML_PATH_CHECK_COOKIES);
 
-        $paramsWhiteList = trim(strtolower($this->scopeConfig->getValue(static::XML_PATH_PARAMS_WHITELIST)));
+        $paramsWhiteList = trim(strtolower($this->scopeConfig->getValue(ShieldInterface::XML_PATH_PARAMS_WHITELIST)));
         $paramsWhiteList = preg_split('/[\r\n\s,]+/', $paramsWhiteList);
 
         $request = [
@@ -180,7 +172,7 @@ class Shield implements ShieldInterface
      */
     public function isEnabled()
     {
-        return !!$this->scopeConfig->getValue(static::XML_PATH_ENABLED);
+        return !!$this->scopeConfig->getValue(ShieldInterface::XML_PATH_ENABLED);
     }
 
     /**
@@ -189,7 +181,7 @@ class Shield implements ShieldInterface
      */
     public function getMinImpactToLog()
     {
-        return intval($this->scopeConfig->getValue(static::XML_PATH_MIN_IMPACT_LOG));
+        return intval($this->scopeConfig->getValue(ShieldInterface::XML_PATH_MIN_IMPACT_LOG));
     }
 
     /**
@@ -198,7 +190,7 @@ class Shield implements ShieldInterface
      */
     public function getMinImpactToStop()
     {
-        return intval($this->scopeConfig->getValue(static::XML_PATH_MIN_IMPACT_STOP));
+        return intval($this->scopeConfig->getValue(ShieldInterface::XML_PATH_MIN_IMPACT_STOP));
     }
 
 }

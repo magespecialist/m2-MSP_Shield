@@ -22,6 +22,14 @@ namespace MSP\Shield\Api;
 
 interface ShieldInterface
 {
+    const XML_PATH_ENABLED = 'msp_securitysuite_shield/general/enabled';
+    const XML_PATH_ENABLED_BACKEND = 'msp_securitysuite_shield/general/enabled_backend';
+    const XML_PATH_CHECK_COOKIES = 'msp_securitysuite_shield/general/check_cookies';
+    const XML_PATH_MIN_IMPACT_LOG = 'msp_securitysuite_shield/general/min_impact_log';
+    const XML_PATH_MIN_IMPACT_STOP = 'msp_securitysuite_shield/general/min_impact_stop';
+    const XML_PATH_URI_WHITELIST = 'msp_securitysuite_shield/general/uri_whitelist';
+    const XML_PATH_PARAMS_WHITELIST = 'msp_securitysuite_shield/general/params_whitelist';
+
     /**
      * Return true if should scan request
      * @return bool
