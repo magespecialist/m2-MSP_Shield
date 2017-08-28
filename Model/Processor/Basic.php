@@ -32,11 +32,9 @@ class Basic implements ProcessorInterface
      */
     public function processValue($fieldName, &$fieldValue)
     {
-        if (trim($fieldValue) !== $fieldValue) {
-            $fieldValue = trim($fieldValue);
-            return true;
-        }
+        $originalValue = $fieldValue;
+        $fieldValue = preg_replace("/[\r\n]+/", ' ', trim($originalValue));
 
-        return false;
+        return ($originalValue !== $fieldValue);
     }
 }

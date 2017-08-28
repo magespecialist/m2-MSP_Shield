@@ -22,13 +22,22 @@ namespace MSP\Shield\Api;
 
 interface DetectorInterface
 {
-    const SURE_MATCH_SCORE = 1000;
+    const SCORE_CRITICAL_MATCH = 50;
+    const SCORE_LOW_PROBABILITY_MATCH = 1;
+    const SCORE_SUSPICIOUS_MATCH = 5;
+    const SCORE_HIGH_PROBABILITY_MATCH = 10;
 
     /**
      * Check request
      * @param string $fieldName
      * @param string $fieldValue
-     * @return ThreatInterface
+     * @return ThreatInterface[]
      */
     public function scanRequest($fieldName, $fieldValue);
+
+    /**
+     * Get detector codename
+     * @return string
+     */
+    public function getCode();
 }

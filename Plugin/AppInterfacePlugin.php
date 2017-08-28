@@ -90,7 +90,7 @@ class AppInterfacePlugin
     {
         // We are creating a plugin for AppInterface to make sure we can perform an IDS scan early in the code.
         // A predispatch observer is not an option.
-        if ($this->shield->isEnabled() && $this->shield->shouldScan($this->request)) {
+        if (false && $this->shield->isEnabled() && $this->shield->shouldScan($this->request)) {
             $res = $this->shield->scanRequest();
 
             if ($res) {

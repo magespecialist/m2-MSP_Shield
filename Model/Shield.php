@@ -128,12 +128,6 @@ class Shield implements ShieldInterface
         $paramsWhiteList = trim(strtolower($this->scopeConfig->getValue(ShieldInterface::XML_PATH_PARAMS_WHITELIST)));
         $paramsWhiteList = preg_split('/[\r\n\s,]+/', $paramsWhiteList);
 
-        $_GET['ciccio'] = json_encode([
-            'abc' => serialize([1, 2, 3]),
-            'bbb' => base64_encode('pippo // è'),
-            'aaaa' => base64_encode(serialize(base64_encode('eval(base64_encode())')))
-        ]);
-
         $request = [
             'GET' => $this->getFilteredRequestArg('GET', $_GET, $paramsWhiteList),
             'POST' => $this->getFilteredRequestArg('POST', $_POST, $paramsWhiteList),
@@ -159,9 +153,7 @@ class Shield implements ShieldInterface
             return null;
         }
 
-        $this->ips->scanRequest($request);
-
-        return null;
+        return $this->ips->scanRequest($request);
     }
 
     /**

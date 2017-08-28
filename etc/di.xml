@@ -25,6 +25,16 @@
     <preference for="MSP\Shield\Api\ShieldInterface" type="MSP\Shield\Model\Shield" />
     <preference for="MSP\Shield\Api\IpsInterface" type="MSP\Shield\Model\Ips" />
     <preference for="MSP\Shield\Api\ThreatInterface" type="MSP\Shield\Model\Threat" />
+    <preference for="MSP\Shield\Api\ScanResultInterface" type="MSP\Shield\Model\ScanResult" />
+    <preference for="MSP\Shield\Api\DetectorRegexInterface" type="MSP\Shield\Model\DetectorRegex" />
+
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="msp_shield_test" xsi:type="object">MSP\Shield\Command\Test</item>
+            </argument>
+        </arguments>
+    </type>
 
     <type name="MSP\Shield\Api\IpsInterface">
         <arguments>

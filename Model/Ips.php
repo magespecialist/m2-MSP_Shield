@@ -5,7 +5,8 @@ use MSP\Shield\Api\DetectorInterface;
 use MSP\Shield\Api\FilterInterface;
 use MSP\Shield\Api\IpsInterface;
 use MSP\Shield\Api\ProcessorInterface;
-use MSP\Shield\Api\ThreatInterface;
+use MSP\Shield\Api\ScanResultInterface;
+use MSP\Shield\Api\ScanResultInterfaceFactory;
 
 class Ips implements IpsInterface
 {
@@ -24,7 +25,13 @@ class Ips implements IpsInterface
      */
     private $processors;
 
+    /**
+     * @var ScanResultInterfaceFactory
+     */
+    private $scanResultInterfaceFactory;
+
     public function __construct(
+        ScanResultInterfaceFactory $scanResultInterfaceFactory,
         $processors = [],
         $filters = [],
         $detectors = []
@@ -32,6 +39,7 @@ class Ips implements IpsInterface
         $this->detectors = $detectors;
         $this->filters = $filters;
         $this->processors = $processors;
+        $this->scanResultInterfaceFactory = $scanResultInterfaceFactory;
     }
 
     /**
@@ -77,7 +85,9 @@ class Ips implements IpsInterface
             if ($this->shouldScan($fieldName, $fieldValue)) {
                 foreach ($this->detectors as $detector) {
                     $res = $detector->scanRequest($fieldName, $fieldValue);
-                    $threats[] = $res;
+                    if (count($res)) {
+                        $threats = array_merge($threats, $res);
+                    }
                 }
             }
         }
@@ -108,12 +118,11 @@ class Ips implements IpsInterface
     /**
      * Check request
      * @param array $request
-     * @return ThreatInterface[]
+     * @return ScanResultInterface
      */
     public function scanRequest(array $request)
     {
         $threats = [];
-
         foreach ($request as $area => $params) {
             foreach ($params as $k => $v) {
                 $fieldKey = $area . '.' . $k;
@@ -123,6 +132,11 @@ class Ips implements IpsInterface
             }
         }
 
-        return null;
+        /** @var $scanResult ScanResultInterface */
+        $scanResult = $this->scanResultInterfaceFactory->create([
+            'threats' => $threats,
+        ]);
+
+        return $scanResult;
     }
 }

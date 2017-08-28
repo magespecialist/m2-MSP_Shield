@@ -35,9 +35,9 @@ class Literal implements FilterInterface
         $fieldValue = trim($fieldValue);
 
         // Skip this field if it is only literal
-        if (!strlen($fieldValue) || preg_match('/^[\s\w\_]+$/', $fieldValue)) {
-            return FilterInterface::NO_SCAN;
-        }
+//        if (!strlen($fieldValue) || preg_match('/^[\s\w\_]+$/', $fieldValue)) {
+//            return FilterInterface::NO_SCAN;
+//        }
 
         return FilterInterface::NEXT_FILTER;
     }

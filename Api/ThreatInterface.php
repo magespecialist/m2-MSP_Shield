@@ -36,7 +36,7 @@ interface ThreatInterface
 
     /**
      * Get a list of involved detectors
-     * @return DetectorInterface
+     * @return \MSP\Shield\Api\DetectorInterface
      */
     public function getDetector();
 
@@ -45,4 +45,51 @@ interface ThreatInterface
      * @return string
      */
     public function getReason();
+
+    /**
+     * Get additional information
+     * @return array
+     */
+    public function getAdditional();
+
+    /**
+     * Get a thread description
+     * @return string
+     */
+    public function getDescription();
+
+    /**
+     * Set threat identification
+     * @param string $value
+     * @return \MSP\Shield\Api\ThreatInterface
+     */
+    public function setId($value);
+
+    /**
+     * Set threat score
+     * @param int $value
+     * @return \MSP\Shield\Api\ThreatInterface
+     */
+    public function setScore($value);
+
+    /**
+     * Set a list of involved detectors
+     * @param \MSP\Shield\Api\DetectorInterface $value
+     * @return \MSP\Shield\Api\ThreatInterface
+     */
+    public function setDetector(DetectorInterface $value);
+
+    /**
+     * Set reason as string
+     * @param string $value
+     * @return \MSP\Shield\Api\ThreatInterface
+     */
+    public function setReason($value);
+
+    /**
+     * Set additional information
+     * @param array $value
+     * @return \MSP\Shield\Api\ThreatInterface
+     */
+    public function setAdditional(array $value);
 }

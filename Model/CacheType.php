@@ -18,14 +18,21 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-namespace MSP\Shield\Api;
+namespace MSP\Shield\Model;
 
-interface IpsInterface
+use Magento\Framework\App\Cache\Type\FrontendPool;
+use Magento\Framework\Cache\Frontend\Decorator\TagScope;
+
+class CacheType extends TagScope
 {
+    const TYPE_IDENTIFIER = 'msp_shield';
+    const CACHE_TAG = 'MSP_SHIELD_TAG';
+
     /**
-     * Check request
-     * @param array $request
-     * @return ScanResultInterface
+     * @param FrontendPool $cacheFrontendPool
      */
-    public function scanRequest(array $request);
+    public function __construct(FrontendPool $cacheFrontendPool)
+    {
+        parent::__construct($cacheFrontendPool->get(self::TYPE_IDENTIFIER), self::CACHE_TAG);
+    }
 }

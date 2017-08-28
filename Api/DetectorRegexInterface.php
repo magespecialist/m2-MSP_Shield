@@ -20,12 +20,14 @@
 
 namespace MSP\Shield\Api;
 
-interface IpsInterface
+interface DetectorRegexInterface
 {
     /**
-     * Check request
-     * @param array $request
-     * @return ScanResultInterface
+     * Scan request content over different regex patterns
+     * @param \MSP\Shield\Api\DetectorInterface $detector
+     * @param array $regexList
+     * @param string $value
+     * @param array &$threats
      */
-    public function scanRequest(array $request);
+    public function scanRegex($detector, array $regexList, $value, array &$threats);
 }

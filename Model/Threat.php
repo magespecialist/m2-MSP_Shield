@@ -25,13 +25,19 @@ use MSP\Shield\Api\ThreatInterface;
 
 class Threat implements ThreatInterface
 {
+    protected $id = null;
+    protected $score = null;
+    protected $detector = null;
+    protected $reason = null;
+    protected $additional = null;
+
     /**
      * Get threat identification
      * @return string
      */
     public function getId()
     {
-        // TODO: Implement getId() method.
+        return $this->id;
     }
 
     /**
@@ -40,7 +46,7 @@ class Threat implements ThreatInterface
      */
     public function getScore()
     {
-        // TODO: Implement getScore() method.
+        return $this->score;
     }
 
     /**
@@ -49,7 +55,7 @@ class Threat implements ThreatInterface
      */
     public function getDetector()
     {
-        // TODO: Implement getDetector() method.
+        return $this->detector;
     }
 
     /**
@@ -58,6 +64,80 @@ class Threat implements ThreatInterface
      */
     public function getReason()
     {
-        // TODO: Implement getReason() method.
+        return $this->reason;
+    }
+
+    /**
+     * Set threat identification
+     * @param string $value
+     * @return ThreatInterface
+     */
+    public function setId($value)
+    {
+        $this->id = $value;
+        return $this;
+    }
+
+    /**
+     * Set threat score
+     * @param int $value
+     * @return ThreatInterface
+     */
+    public function setScore($value)
+    {
+        $this->score = $value;
+        return $this;
+    }
+
+    /**
+     * Set a list of involved detectors
+     * @param DetectorInterface $value
+     * @return ThreatInterface
+     */
+    public function setDetector(DetectorInterface $value)
+    {
+        $this->detector = $value;
+        return $this;
+    }
+
+    /**
+     * Set reason as string
+     * @param string $value
+     * @return ThreatInterface
+     */
+    public function setReason($value)
+    {
+        $this->reason = $value;
+        return $this;
+    }
+
+    /**
+     * Get a thread description
+     * @return string
+     */
+    public function getDescription()
+    {
+        return $this->getDetector()->getCode() .'/'
+            .$this->getId() . '[' . $this->getScore() . ']: ' . $this->getReason();
+    }
+
+    /**
+     * Get additional information
+     * @return array
+     */
+    public function getAdditional()
+    {
+        return $this->additional;
+    }
+
+    /**
+     * Set additional information
+     * @param array $value
+     * @return \MSP\Shield\Api\ThreatInterface
+     */
+    public function setAdditional(array $value)
+    {
+        $this->additional = $value;
+        return $this;
     }
 }

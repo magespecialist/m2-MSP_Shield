@@ -20,12 +20,17 @@
 
 namespace MSP\Shield\Api;
 
-interface IpsInterface
+interface ScanResultInterface
 {
     /**
-     * Check request
-     * @param array $request
-     * @return ScanResultInterface
+     * Get score
+     * @return int
      */
-    public function scanRequest(array $request);
+    public function getScore();
+
+    /**
+     * Get list of matched threats
+     * @return ThreatInterface[]
+     */
+    public function getThreats();
 }
