@@ -60,12 +60,6 @@ class Sqli implements DetectorInterface
      */
     private $resourceConnection;
 
-    const TOKEN_STRING = '__STRING__';
-    const TOKEN_FN = '__SQL_FUNCTION__';
-    const TOKEN_TABLE_NAME = '__TABLE_NAME__';
-    const TOKEN_TABLE_OPERATION = '__TABLE_OP__';
-    const TOKEN_TABLE_OPERATION_OPTIONS = '__TABLE_OPS__';
-
     public function __construct(
         DetectorRegexInterface $detectorRegex,
         ThreatInterfaceFactory $threatInterfaceFactory,
