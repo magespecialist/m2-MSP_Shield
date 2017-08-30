@@ -41,11 +41,6 @@
                     <label>Enable</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
-                <field id="enabled_backend" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>Enable in Magento backend</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>WARNING: Backend features may trigger false positives, we suggest you to protect backend with MSP_AdminRestriction module</comment>
-                </field>
                 <field canRestore="1" id="check_cookies" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Enable cookie check</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
@@ -53,11 +48,11 @@
                 </field>
                 <field canRestore="1" id="min_impact_log" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Minimum impact score to log event</label>
-                    <comment>0 to disable, suggested value: 3</comment>
+                    <comment>0 to disable, suggested value: 10</comment>
                 </field>
                 <field canRestore="1" id="min_impact_stop" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Minimum impact score to stop action</label>
-                    <comment>0 to disable, suggested level: 6</comment>
+                    <comment>0 to disable, suggested value: 40</comment>
                 </field>
                 <field canRestore="1" id="params_whitelist" translate="label" type="textarea" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Parameters whitelist whitelist</label>

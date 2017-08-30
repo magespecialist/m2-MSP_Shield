@@ -33,4 +33,10 @@ interface ScanResultInterface
      * @return ThreatInterface[]
      */
     public function getThreats();
+
+    /**
+     * Get additional information
+     * @return array
+     */
+    public function getAdditionalInfo();
 }

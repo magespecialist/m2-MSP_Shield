@@ -36,9 +36,13 @@ class Sqli implements DetectorInterface
 
     const CACHE_KEY_MAGENTO_TABLES = 'sqli/table_names';
     const CACHE_KEY_MYSQL_FUNCTION = 'sqli/mysql_functions';
+    const CACHE_KEY_MYSQL_KEYWORDS = 'sqli/mysql_keywords';
+    const CACHE_KEY_MYSQL_FIELDS = 'sqli/mysql_fields';
 
     protected $magentoTables = null;
     protected $mysqlFunctions = null;
+    protected $mysqlKeywords = null;
+    protected $mysqlFields = null;
 
     /**
      * @var DetectorRegexInterface
@@ -109,6 +113,7 @@ class Sqli implements DetectorInterface
 
     /**
      * Get a list of MySQL functions
+     * @return array
      */
     protected function getMysqlFunctions()
     {
@@ -125,11 +130,70 @@ class Sqli implements DetectorInterface
                     }
                 }
 
+                $this->cacheType->save(serialize($mysqlFunctions), static::CACHE_KEY_MYSQL_FUNCTION);
                 $this->mysqlFunctions = $mysqlFunctions;
             }
         }
 
         return $this->mysqlFunctions;
+    }
+
+    /**
+     * Get a list of MySQL keywords
+     * @return array
+     */
+    protected function getMysqlKeywords()
+    {
+        if (is_null($this->mysqlKeywords)) {
+            if ($this->cacheType->test(static::CACHE_KEY_MYSQL_KEYWORDS)) {
+                $this->mysqlKeywords = unserialize($this->cacheType->load(static::CACHE_KEY_MYSQL_KEYWORDS));
+            } else {
+                $mysqlKeywords = [];
+
+                Context::load();
+                foreach (Context::$KEYWORDS as $keyword => $flag) {
+                    if ($flag & Token::FLAG_KEYWORD_RESERVED) {
+                        $mysqlKeywords[] = strtoupper($keyword);
+                    }
+                }
+
+                $this->cacheType->save(serialize($mysqlKeywords), static::CACHE_KEY_MYSQL_KEYWORDS);
+                $this->mysqlKeywords = $mysqlKeywords;
+            }
+        }
+
+        return $this->mysqlKeywords;
+    }
+
+    /**
+     * Get a list of all database field names
+     * @return array
+     */
+    protected function getMagentoFieldNames()
+    {
+        if (is_null($this->mysqlFields)) {
+            if ($this->cacheType->test(static::CACHE_KEY_MYSQL_FIELDS)) {
+                $this->mysqlFields = unserialize($this->cacheType->load(static::CACHE_KEY_MYSQL_FIELDS));
+            } else {
+                $mysqlFields = [];
+
+                $connection = $this->resourceConnection->getConnection();
+                $tables = $this->getMagentoTables();
+                foreach ($tables as $table) {
+                    $fields = $connection->describeTable($table);
+                    foreach ($fields as $field) {
+                        $mysqlFields[] = $field['COLUMN_NAME'];
+                    }
+                }
+
+                $mysqlFields = array_unique($mysqlFields);
+
+                $this->cacheType->save(serialize($mysqlFields), static::CACHE_KEY_MYSQL_FIELDS);
+                $this->mysqlFields = $mysqlFields;
+            }
+        }
+
+        return $this->mysqlFields;
     }
 
     /**
@@ -143,6 +207,26 @@ class Sqli implements DetectorInterface
     }
 
     /**
+     * Return true if a token is a field name
+     * @param string $token
+     * @return bool
+     */
+    protected function getIsFieldName($token)
+    {
+        return in_array(mb_strtolower($token), $this->getMagentoFieldNames());
+    }
+
+    /**
+     * Return true if a token is a mysql keyword
+     * @param string $token
+     * @return bool
+     */
+    protected function getIsKeyword($token)
+    {
+        return in_array(mb_strtoupper($token), $this->getMysqlKeywords());
+    }
+
+    /**
      * Encode query
      * @param $query
      * @param array $threats
@@ -152,9 +236,10 @@ class Sqli implements DetectorInterface
     {
         $mysqlFunctions = $this->getMysqlFunctions();
 
-        $tableOperations = [
+        $dbOperations = [
             'SELECT', 'INSERT', 'UPDATE', 'DROP', 'LOAD DATA', 'TRUNCATE', 'ALTER',
-            'RENAME', 'REPLACE', 'DELETE', 'DESC', 'DESCRIBE'
+            'RENAME', 'REPLACE', 'DELETE', 'DESC', 'DESCRIBE', 'SHUTDOWN', 'SHOW', 'BACKUP', 'RESTORE',
+            'UNION',
         ];
 
         $tableCreate = [
@@ -179,17 +264,21 @@ class Sqli implements DetectorInterface
             if (in_array($token, ['+', '=', '#', ')', '(', 'X', ',', ';'])) {
                 $encodedQuery[] = $token;
             } else if (is_numeric($token)) {
-                $encodedQuery[] = '1';
+                $encodedQuery[] = 'X';
             } else if (in_array($token, $tableCreate)) {
                 $encodedQuery[] = 'C';
-            } else if (in_array($token, $tableOperations)) {
+            } else if (in_array($token, $dbOperations)) {
                 $encodedQuery[] = 'S';
             } else if (in_array($token, $tableOperationsOptions)) {
-                $encodedQuery[] = 'F';
+                $encodedQuery[] = 'O';
             } else if (in_array($token, $mysqlFunctions)) {
                 $encodedQuery[] = 'F';
             } else if ($this->getIsTableName($token)) {
                 $encodedQuery[] = 'T';
+            } else if ($this->getIsFieldName($token)) {
+                $encodedQuery[] = 'X';
+            } else if ($this->getIsKeyword($token)) {
+                $encodedQuery[] = 'K';
             } else {
                 $encodedQuery[] = 0;
             }
@@ -204,15 +293,25 @@ class Sqli implements DetectorInterface
     /**
      * Normalize a query removing whitespaces and comments
      * @param string $originalQuery
-     * @param array $threats
-     * @return mixed
+     * @param array $scenariosThreats
+     * @return array
      */
-    protected function getNormalizedQueryScenarios($originalQuery, array &$threats)
+    protected function getNormalizedQueryScenarios($originalQuery, array &$scenariosThreats)
     {
-        $scenarios = [$originalQuery, "'$originalQuery'", '"' . $originalQuery . '"'];
+        $scenarios = [
+            $originalQuery,
+            "'$originalQuery'",
+            '"' . $originalQuery . '"',
+            "'$originalQuery",
+            "$originalQuery''",
+            '"' . $originalQuery,
+            $originalQuery . '"',
+        ];
         $normalizedScenarios = [];
 
         for ($i = 0; $i < count($scenarios); $i++) {
+            $threats = [];
+
             // Locate strings and replace
             $modifiedQuery = $scenarios[$i];
             $modifiedQuery = preg_replace(
@@ -247,8 +346,7 @@ class Sqli implements DetectorInterface
                 $threats[] = $threat;
             }
 
-            if (preg_match('/(X.{0,10})?(?:\-\-|#).+$/', $modifiedQuery, $matches)) {
-
+            if (preg_match('/(X.{0,10})?(?:\-\-|#).*$/', $modifiedQuery, $matches)) {
                 if (count($matches) > 1) {
                     $sqlCommentScore = DetectorInterface::SCORE_CRITICAL_MATCH;
                 } else {
@@ -265,7 +363,21 @@ class Sqli implements DetectorInterface
 
                 $threats[] = $threat;
 
-                $modifiedQuery = preg_replace('/(\-\-|#).+$/', "", $modifiedQuery, -1, $otherCommentsCount);
+                $modifiedQuery = preg_replace('/(\-\-|#).*$/', "", $modifiedQuery, -1, $otherCommentsCount);
+            }
+
+            if (preg_match('/\W0x[0-9a-f]{32,}/i', $modifiedQuery) ||
+                preg_match('/\W0b(0|1){32,}/i', $modifiedQuery)
+            ) {
+                $threat = $this->threatInterfaceFactory->create();
+                $threat
+                    ->setDetector($this)
+                    ->setId(static::RESCODE_SQLI_INJECTION)
+                    ->setAdditional(['query' => $modifiedQuery])
+                    ->setReason(__('Injection payload detected'))
+                    ->setScore(DetectorInterface::SCORE_CRITICAL_MATCH);
+
+                $threats[] = $threat;
             }
 
             // Remove redundant spaces
@@ -278,10 +390,17 @@ class Sqli implements DetectorInterface
             $modifiedQuery = str_ireplace(['&&', '||'], ' # ', $modifiedQuery);
             $modifiedQuery = str_replace(['<<', '>>', '&', '|', '^', '~', '+', '-', '%', '*', '/'], ' + ', $modifiedQuery);
             $modifiedQuery = str_ireplace(['<', '>', '=', '<=', '>=', '==', '!=', '<=>'], ' = ', $modifiedQuery);
-            $modifiedQuery = str_ireplace([' is null ', ' is not null '], ' =1 ', $modifiedQuery);
+            $modifiedQuery = str_ireplace([' is null ', ' is not null '], ' =X ', $modifiedQuery);
 
             $modifiedQuery = preg_replace('/(\W)(?:and|or|xor)(\W)/i', '\\1#\\2', $modifiedQuery);
-            $modifiedQuery = preg_replace('/(\W)(?:is\s+(?:not\s+)?null)(\W)/i', '\\1=1\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\W)(?:is\s+(?:not\s+)?null)(\W)/i', '\\1=X\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\W)0x[0-9a-f]+(\W)/i', '\\1X\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\W)0b[01]+(\W)/i', '\\1X\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\W)\w?like(\W)/i', '\\1=\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\W)(?:true|false)(\W)/i', '\\1X\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\W)not(\W)/i', '\\1\\2', $modifiedQuery);
+
+            $scenariosThreats[$modifiedQuery] = $threats;
 
             if (
                 (mb_strpos($modifiedQuery, "'") === false) &&
@@ -310,83 +429,88 @@ class Sqli implements DetectorInterface
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('SQL operator injection'),
                 'regex' => [
-                    '^1#' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
-                    '#1$' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
-                    '^X#' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '#X$' => DetectorInterface::SCORE_CRITICAL_MATCH,
-
-                    '(?:1|X)#(?:1|X)' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    '^X#' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    '#X$' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
                     'X#X' => DetectorInterface::SCORE_CRITICAL_MATCH,
 
-                    '(?:(?:1|0|X)#(?:1|0|X)#)+' => DetectorInterface::SCORE_CRITICAL_MATCH,
-
-                    '1#0' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
-                    'X#0' => DetectorInterface::SCORE_CRITICAL_MATCH,
-
-                    '0#1' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
-                    '0#X' => DetectorInterface::SCORE_CRITICAL_MATCH,
-
+                    'X#0' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    '0#X' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
                     '0#0' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
 
-                    '(?:1|X)=(?:1|X)' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '0=(?:1|X)' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '(?:1|X)=0' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'X=X' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '0=X' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    'X=0' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
 
-                    '(?:0|1|X)#(?:0|1|X)=(?:0|1|X)' => DetectorInterface::SCORE_CRITICAL_MATCH, // 1 or a = b
-                    '(?:0|1|X)=(?:0|1|X)#(?:0|1|X)' => DetectorInterface::SCORE_CRITICAL_MATCH, // a = 1 or b
+                    '(?:0|X)#(?:0|X)=(?:0|X)' => DetectorInterface::SCORE_CRITICAL_MATCH, // 1 or a = b
+                    '(?:0|X)=(?:0|X)#(?:0|X)' => DetectorInterface::SCORE_CRITICAL_MATCH, // a = 1 or b
+
+                    'K' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH,
                 ]
             ], [
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('SQL operations injection'),
                 'regex' => [
-                    ';S' => DetectorInterface::SCORE_CRITICAL_MATCH, // Stacked query
                     'F' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // MySQL functions without opening parenthesis
                     'F\\(' => DetectorInterface::SCORE_CRITICAL_MATCH, // MySQL functions with opening parenthesis
-                    'SF{0,8}T' => DetectorInterface::SCORE_CRITICAL_MATCH, // insert into tablename
-                    'FT' => DetectorInterface::SCORE_CRITICAL_MATCH, // from tablename
+
+                    'S(?:O|K){0,8}T' => DetectorInterface::SCORE_CRITICAL_MATCH, // insert into tablename
+                    'S(?:O|K)' => DetectorInterface::SCORE_CRITICAL_MATCH, // insert into tablename
+                    '(?:O|K)S' => DetectorInterface::SCORE_CRITICAL_MATCH, // union select
+
+                    '(?:O|K)T' => DetectorInterface::SCORE_CRITICAL_MATCH, // from tablename
+                    'O0' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH, // from tablename
+
                     'ST' => DetectorInterface::SCORE_CRITICAL_MATCH, // desc tablename
-                    'S{0,10}F' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // select ... from
-                    'S(?:(?:1|X|0),)+F' => DetectorInterface::SCORE_CRITICAL_MATCH, // select a,b,c from
-                    'S\\+F' => DetectorInterface::SCORE_CRITICAL_MATCH, // select * from
-                    'CF\\w{0,8}\\(' => DetectorInterface::SCORE_CRITICAL_MATCH, // Create table
+                    'S0' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // desc tablename
+
+                    'S{1,10}O' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // select ... from
+                    'S(?:(?:X|0),)+O' => DetectorInterface::SCORE_CRITICAL_MATCH, // select a,b,c from
+                    'S\\+O' => DetectorInterface::SCORE_CRITICAL_MATCH, // select * from
+                    'CO\\w{0,8}\\(' => DetectorInterface::SCORE_CRITICAL_MATCH, // Create table
+                    'SO*0,' => DetectorInterface::SCORE_CRITICAL_MATCH,
+
+                    'K{2,}' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // Order by
+                    'K{2,}X0*$' => DetectorInterface::SCORE_CRITICAL_MATCH, // Order by x desc
                 ],
             ], [
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('Stacked query'),
                 'regex' => [
-                    '^;' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '^(?:1|X)+;' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '^;' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
+                    ';(S|F)' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '^X+;' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
                 ]
             ], [
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('Arguments injection'),
                 'regex' => [
-                    '(?:(?:1|X)\,)' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
-                    '0,' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH,
+                    'X\,' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
                 ]
             ]
         ];
 
         $this->detectorRegex->scanRegex($this, $regex, $encodedQuery, $threats);
 
-        $neutralTokens = substr_count($encodedQuery, '0') + substr_count($encodedQuery, '1');
-        if ($neutralTokens < strlen($encodedQuery) / 2) {
-            $score = DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-            $score += substr_count($encodedQuery, '#') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-            $score += substr_count($encodedQuery, 'X') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-            $score += substr_count($encodedQuery, '=') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-            $score += substr_count($encodedQuery, '+') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-
-            $threat = $this->threatInterfaceFactory->create();
-            $threat
-                ->setDetector($this)
-                ->setId(static::RESCODE_SQLI_INJECTION)
-                ->setAdditional(['encoded' => $encodedQuery])
-                ->setReason(__('Suspicious commands sequence'))
-                ->setScore($score);
-
-            $threats[] = $threat;
-        }
+//        if (strlen($encodedQuery) > 4) {
+//            $neutralTokens = substr_count($encodedQuery, '0') + substr_count($encodedQuery, '1');
+//            if ($neutralTokens < strlen($encodedQuery) / 2) {
+//                $score = DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
+//                $score += substr_count($encodedQuery, '#') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
+//                $score += substr_count($encodedQuery, 'X') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
+//                $score += substr_count($encodedQuery, '=') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
+//                $score += substr_count($encodedQuery, '+') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
+//
+//                $threat = $this->threatInterfaceFactory->create();
+//                $threat
+//                    ->setDetector($this)
+//                    ->setId(static::RESCODE_SQLI_INJECTION)
+//                    ->setAdditional(['encoded' => $encodedQuery])
+//                    ->setReason(__('Suspicious commands sequence'))
+//                    ->setScore($score);
+//
+//                $threats[] = $threat;
+//            }
+//        }
     }
 
     /**
@@ -397,17 +521,41 @@ class Sqli implements DetectorInterface
      */
     public function scanRequest($fieldName, $fieldValue)
     {
+        // Remove non UTF-8 chars
+        $fieldValue = preg_replace(
+            '/((?:[\x00-\x7F]|[\xC0-\xDF][\x80-\xBF]|[\xE0-\xEF][\x80-\xBF]{2}|[\xF0-\xF7][\x80-\xBF]{3})+)|./x',
+            '$1',
+            $fieldValue
+        );
+
         // Normalize to single quote
         $fieldValue = mb_strtolower($fieldValue);
         $fieldValue = preg_replace('/[\t\r\n\s]+/', ' ', $fieldValue);
+        $fieldValue = str_replace('`', '', $fieldValue);
 
-        $threats = [];
-        $scenarios = $this->getNormalizedQueryScenarios($fieldValue, $threats);
+        $scenariosThreats = [];
+        $scenarios = $this->getNormalizedQueryScenarios($fieldValue, $scenariosThreats);
         foreach ($scenarios as $scenario) {
-            $encodedQuery = $this->encodeQuery($scenario, $threats);
-            $this->evaluateEncodedQuery($encodedQuery, $threats);
+            $encodedQuery = $this->encodeQuery($scenario, $scenariosThreats[$scenario]);
+            $this->evaluateEncodedQuery($encodedQuery, $scenariosThreats[$scenario]);
         }
 
-        return $threats;
+        // Find the most dangerous scenario
+        $maxScore = 0;
+        $maxThreats = [];
+        foreach ($scenariosThreats as $scenario => $threats) {
+            $scenarioScore = 0;
+            foreach ($threats as $threat) {
+                /** @var ThreatInterface $threat */
+                $scenarioScore += $threat->getScore();
+            }
+
+            if ($scenarioScore > $maxScore) {
+                $maxScore = $scenarioScore;
+                $maxThreats = $threats;
+            }
+        }
+
+        return $maxThreats;
     }
 }

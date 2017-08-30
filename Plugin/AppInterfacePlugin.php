@@ -24,6 +24,7 @@ use Magento\Framework\App\State;
 use Magento\Framework\AppInterface;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Response\Http;
+use Magento\Framework\Json\EncoderInterface;
 use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\UrlInterface;
 use MSP\SecuritySuiteCommon\Api\LogManagementInterface;
@@ -67,6 +68,11 @@ class AppInterfacePlugin
      */
     private $objectManager;
 
+    /**
+     * @var EncoderInterface
+     */
+    private $encoder;
+
 
     public function __construct(
         RequestInterface $request,
@@ -74,6 +80,7 @@ class AppInterfacePlugin
         UrlInterface $url,
         State $state,
         ShieldInterface $shield,
+        EncoderInterface $encoder,
         EventInterface $event,
         ObjectManagerInterface $objectManager
     ) {
@@ -84,32 +91,31 @@ class AppInterfacePlugin
         $this->shield = $shield;
         $this->event = $event;
         $this->objectManager = $objectManager;
+        $this->encoder = $encoder;
     }
 
     public function aroundLaunch(AppInterface $subject, \Closure $proceed)
     {
         // We are creating a plugin for AppInterface to make sure we can perform an IDS scan early in the code.
         // A predispatch observer is not an option.
-        if (false && $this->shield->isEnabled() && $this->shield->shouldScan($this->request)) {
+        if ($this->shield->isEnabled() && $this->shield->shouldScan($this->request)) {
             $res = $this->shield->scanRequest();
 
-            if ($res) {
-                $tags = implode(', ', $res->getTags());
-
+            if ($res && ($res->getScore() > 0)) {
                 $stopAction = $this->shield->getMinImpactToStop() &&
-                    $this->shield->getMinImpactToStop() <= $res->getImpact();
+                    $this->shield->getMinImpactToStop() <= $res->getScore();
 
                 $logAction = $stopAction ||
                     ($this->shield->getMinImpactToLog() &&
-                        $this->shield->getMinImpactToLog() <= $res->getImpact()
+                        $this->shield->getMinImpactToLog() <= $res->getScore()
                     );
 
                 if ($logAction) {
                     $this->event->dispatch(LogManagementInterface::EVENT_ACTIVITY, [
                         'module' => 'MSP_Shield',
-                        'message' => $tags . ' (impact ' . $res->getImpact() . ')',
+                        'message' => 'Impact ' . $res->getScore(),
                         'action' => $stopAction ? 'stop' : 'log',
-                        'additional' => html_entity_decode(''.$res),
+                        'additional' => $this->encoder->encode($res->getAdditionalInfo()),
                     ]);
                 }
 

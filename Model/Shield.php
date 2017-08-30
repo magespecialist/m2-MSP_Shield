@@ -25,6 +25,7 @@ use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Module\Dir\Reader;
 use MSP\SecuritySuiteCommon\Api\UtilsInterface;
 use MSP\Shield\Api\IpsInterface;
+use MSP\Shield\Api\ScanResultInterface;
 use MSP\Shield\Api\ShieldInterface;
 use MSP\Shield\Api\ThreatInterface;
 
@@ -75,21 +76,17 @@ class Shield implements ShieldInterface
      */
     public function shouldScan()
     {
-        $enabledBackend = !! $this->scopeConfig->getValue(ShieldInterface::XML_PATH_ENABLED_BACKEND);
-        if ($this->utils->isBackendUri() && !$enabledBackend) {
+        if ($this->utils->isBackendUri()) {
             return false;
         }
 
-        $adminPath = $this->utils->getBackendPath();
-
         $whiteList = trim($this->scopeConfig->getValue(ShieldInterface::XML_PATH_URI_WHITELIST));
-        $whiteList = str_replace('$admin', $adminPath, $whiteList);
         $whiteList = preg_split('/[\r\n\s,]+/', $whiteList);
         $whiteList[] = '/msp_security_suite/stop/index/';
 
         $requestUri = $this->utils->getSanitizedUri();
         foreach ($whiteList as $uri) {
-            if (strpos($requestUri, $uri) === 0) {
+            if ($uri && (strpos($requestUri, $uri) === 0)) {
                 return false;
             }
         }
@@ -130,7 +127,7 @@ class Shield implements ShieldInterface
 
         $request = [
             'GET' => $this->getFilteredRequestArg('GET', $_GET, $paramsWhiteList),
-            'POST' => $this->getFilteredRequestArg('POST', $_POST, $paramsWhiteList),
+            'POST' => $this->getFilteredRequestArg('POST', $_POST, $paramsWhiteList)
         ];
 
         if ($checkCookies) {
@@ -144,7 +141,7 @@ class Shield implements ShieldInterface
 
     /**
      * Scan HTTP request and return false if no hack attempt has been detected
-     * @return ThreatInterface[]
+     * @return ScanResultInterface
      */
     public function scanRequest()
     {

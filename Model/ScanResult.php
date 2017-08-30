@@ -62,4 +62,25 @@ class ScanResult implements ScanResultInterface
     {
         return $this->threats;
     }
+
+    /**
+     * Get additional information
+     * @return array
+     */
+    public function getAdditionalInfo()
+    {
+        $return = [];
+
+        $threats = $this->getThreats();
+        foreach ($threats as $threat) {
+            $return[] = [
+                'reason' => $threat->getReason(),
+                'score' => $threat->getScore(),
+                'description' => $threat->getDescription(),
+                'additional' => $threat->getAdditional(),
+            ];
+        }
+
+        return $return;
+    }
 }

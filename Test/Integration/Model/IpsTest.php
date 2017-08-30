@@ -104,6 +104,7 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
             "BENCHMARK(howmanytimes, do this)",
             "BENCHMARK (howmanytimes, do this)",
             "1 union select benchmark(500000,sha1 (0x414141)),1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+            "my@email.com' ORDER BY 19-- mmbG"
         ];
 
         $timeStart = microtime(true);
@@ -115,6 +116,8 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
         $timeEnd = microtime(true);
 
         $averageTime = ($timeEnd - $timeStart) / count($tests);
+        echo $averageTime."\n";
+
         $this->assertLessThan(0.01, $averageTime);
     }
 
@@ -142,6 +145,7 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
         $timeEnd = microtime(true);
 
         $averageTime = ($timeEnd - $timeStart) / count($tests);
+        echo $averageTime."\n";
 
         $this->assertLessThan(0.01, $averageTime);
     }
@@ -178,6 +182,7 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
         $timeEnd = microtime(true);
 
         $averageTime = ($timeEnd - $timeStart) / count($tests);
+        echo $averageTime."\n";
 
         $this->assertLessThan(0.01, $averageTime);
     }

@@ -23,7 +23,6 @@ namespace MSP\Shield\Api;
 interface ShieldInterface
 {
     const XML_PATH_ENABLED = 'msp_securitysuite_shield/general/enabled';
-    const XML_PATH_ENABLED_BACKEND = 'msp_securitysuite_shield/general/enabled_backend';
     const XML_PATH_CHECK_COOKIES = 'msp_securitysuite_shield/general/check_cookies';
     const XML_PATH_MIN_IMPACT_LOG = 'msp_securitysuite_shield/general/min_impact_log';
     const XML_PATH_MIN_IMPACT_STOP = 'msp_securitysuite_shield/general/min_impact_stop';
@@ -38,7 +37,7 @@ interface ShieldInterface
 
     /**
      * Scan HTTP request and return false if no hack attempt has been detected
-     * @return \IDS\Report|false
+     * @return ScanResultInterface
      */
     public function scanRequest();
 

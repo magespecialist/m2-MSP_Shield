@@ -73,20 +73,31 @@ class Ips implements IpsInterface
      * Recursively run detectors on a request
      * @param $fieldName
      * @param $fieldValue
-     * @param &$threats = []
+     * @param array &$threats
      */
-    protected function runDetectors($fieldName, $fieldValue, &$threats = [])
+    protected function runDetectors($fieldName, $fieldValue, &$threats)
     {
         if (is_array($fieldValue)) {
             foreach ($fieldValue as $k => $v) {
-                $this->runDetectors($fieldName, $v);
+                $this->runDetectors($fieldName, $v, $threats);
             }
         } else {
             if ($this->shouldScan($fieldName, $fieldValue)) {
                 foreach ($this->detectors as $detector) {
-                    $res = $detector->scanRequest($fieldName, $fieldValue);
-                    if (count($res)) {
-                        $threats = array_merge($threats, $res);
+                    $scanThreats = $detector->scanRequest($fieldName, $fieldValue);
+                    if (count($scanThreats)) {
+                        foreach ($scanThreats as $scanThreat) {
+                            $additional = [
+                                'threat' => $scanThreat->getAdditional(),
+                                'input' => [
+                                    'value' => $fieldValue,
+                                    'name' => $fieldName,
+                                ],
+                            ];
+                            $scanThreat->setAdditional($additional);
+                        }
+
+                        $threats = array_merge($threats, $scanThreats);
                     }
                 }
             }

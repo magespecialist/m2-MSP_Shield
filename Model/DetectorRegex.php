@@ -49,7 +49,7 @@ class DetectorRegex implements DetectorRegexInterface
             $matchingRegex = [];
 
             foreach ($regexGroup['regex'] as $regex => $score) {
-                if (preg_match('/' . $regex . '/Sim', $value, $matches)) {
+                if (preg_match_all('/' . $regex . '/Sim', $value, $matches)) {
                     $scoreSum += $score;
                     $matchingRegex[$regex] = count($matches) * $score;
                 }
@@ -61,7 +61,10 @@ class DetectorRegex implements DetectorRegexInterface
                 $threat
                     ->setDetector($detector)
                     ->setId($regexGroup['id'])
-                    ->setAdditional($matchingRegex)
+                    ->setAdditional([
+                        'subject' => $value,
+                        'regex' => $matchingRegex,
+                    ])
                     ->setReason($regexGroup['reason'])
                     ->setScore($scoreSum);
 
