@@ -74,9 +74,9 @@ class ScanResult implements ScanResultInterface
         $threats = $this->getThreats();
         foreach ($threats as $threat) {
             $return[] = [
-                'reason' => $threat->getReason(),
+                'reason' => '' . $threat->getReason(),
                 'score' => $threat->getScore(),
-                'description' => $threat->getDescription(),
+                'description' => '' . $threat->getDescription(),
                 'additional' => $threat->getAdditional(),
             ];
         }

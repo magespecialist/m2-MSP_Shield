@@ -1,6 +1,7 @@
 <?php
 namespace MSP\Shield\Model;
 
+use Magento\Framework\Registry;
 use MSP\Shield\Api\DetectorInterface;
 use MSP\Shield\Api\FilterInterface;
 use MSP\Shield\Api\IpsInterface;
@@ -46,25 +47,30 @@ class Ips implements IpsInterface
      * Recursively run processors on a request
      * @param $fieldName
      * @param $fieldValue
+     * @param array &$values = []
      */
-    protected function runProcessors($fieldName, &$fieldValue)
+    protected function runProcessors($fieldName, $fieldValue, array &$values = [])
     {
-        if ($fieldValue && is_string($fieldValue)) {
-            $processorLoop = true;
-            while ($processorLoop && is_string($fieldValue)) {
-                $processorLoop = false;
+        if ($fieldValue) {
+            if (is_string($fieldValue)) {
+                $preFieldValue = $fieldValue;
+
                 foreach ($this->processors as $processor) {
                     if ($processor->processValue($fieldName, $fieldValue)) {
-                        $processorLoop = true;
+                        $this->runProcessors($fieldName, $fieldValue, $values);
                         break;
                     }
                 }
-            }
-        }
 
-        if ($fieldValue && is_array($fieldValue)) {
-            foreach ($fieldValue as $k => &$v) {
-                $this->runProcessors($fieldName, $v);
+                if (!is_array($fieldValue)) {
+                    $values[] = $preFieldValue;
+                }
+            }
+
+            if (is_array($fieldValue)) {
+                foreach ($fieldValue as $k => &$v) {
+                    $this->runProcessors($fieldName, $v, $values);
+                }
             }
         }
     }
@@ -90,7 +96,7 @@ class Ips implements IpsInterface
                             $additional = [
                                 'threat' => $scanThreat->getAdditional(),
                                 'input' => [
-                                    'value' => $fieldValue,
+                                    'value' => utf8_encode($fieldValue),
                                     'name' => $fieldName,
                                 ],
                             ];
@@ -138,8 +144,14 @@ class Ips implements IpsInterface
             foreach ($params as $k => $v) {
                 $fieldKey = $area . '.' . $k;
 
-                $this->runProcessors($fieldKey, $v);
-                $this->runDetectors($fieldKey, $v, $threats);
+                $possibleValues = [];
+                $this->runProcessors($fieldKey, $v, $possibleValues);
+                $possibleValues = array_unique($possibleValues);
+                foreach ($possibleValues as $possibleValue) {
+                    if (strlen($possibleValue) > 3) {
+                        $this->runDetectors($fieldKey, $possibleValue, $threats);
+                    }
+                }
             }
         }
 

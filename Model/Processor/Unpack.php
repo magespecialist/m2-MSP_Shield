@@ -30,10 +30,17 @@ class Unpack implements ProcessorInterface
      */
     private $decoder;
 
+    /**
+     * @var array
+     */
+    private $skip;
+
     public function __construct(
-        DecoderInterface $decoder
+        DecoderInterface $decoder,
+        array $skip = []
     ) {
         $this->decoder = $decoder;
+        $this->skip = $skip;
     }
 
     /**
@@ -44,6 +51,10 @@ class Unpack implements ProcessorInterface
      */
     public function processValue($fieldName, &$fieldValue)
     {
+        if (in_array($fieldName, $this->skip)) {
+            return false;
+        }
+
         // Check if it is a base64 string
         if (
             preg_match('/^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/', $fieldValue)
@@ -66,6 +77,13 @@ class Unpack implements ProcessorInterface
                 return true;
             } catch (\Exception $e) {
             }
+        }
+
+        // Perform URL decoding
+        $urlDecoded = urldecode($fieldValue);
+        if ($urlDecoded !== $fieldValue) {
+            $fieldValue = $urlDecoded;
+            return true;
         }
 
         // Check PHP serialized variable

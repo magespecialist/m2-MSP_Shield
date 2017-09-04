@@ -115,7 +115,7 @@ class AppInterfacePlugin
                         'module' => 'MSP_Shield',
                         'message' => 'Impact ' . $res->getScore(),
                         'action' => $stopAction ? 'stop' : 'log',
-                        'additional' => $this->encoder->encode($res->getAdditionalInfo()),
+                        'additional' => serialize($res->getAdditionalInfo()),
                     ]);
                 }
 

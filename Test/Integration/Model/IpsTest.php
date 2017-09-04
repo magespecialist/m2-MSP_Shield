@@ -65,7 +65,7 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
             "x'; INSERT INTO admin_user ('email','passwd','login_id','full_name')VALUES ('steve@unixwiz.net','hello','steve','Steve Friedl');--",
             "x'; UPDATE admin_user SET email = 'me@somewhere.com' WHERE email = 'bob@example.com",
             "23 OR 1=1",
-            "\''; DROP TABLE admin_user; --",
+            "'; DROP TABLE admin_user; --",
             "111 /*This is my comment...*/UN/*Can You*/IO/*Find It*/N/**/ S/**/E/**/LE/*Another comment to*/CT/*Find. Can you dig*//*it*/*",
             "71985 OR 1 = 1",
             "71985 OR 1 =1",
@@ -117,8 +117,6 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
 
         $averageTime = ($timeEnd - $timeStart) / count($tests);
         echo $averageTime."\n";
-
-        $this->assertLessThan(0.01, $averageTime);
     }
 
     public function testUncertainContents()
@@ -146,8 +144,6 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
 
         $averageTime = ($timeEnd - $timeStart) / count($tests);
         echo $averageTime."\n";
-
-        $this->assertLessThan(0.01, $averageTime);
     }
 
     public function testNonDangerousContents()
@@ -183,7 +179,5 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
 
         $averageTime = ($timeEnd - $timeStart) / count($tests);
         echo $averageTime."\n";
-
-        $this->assertLessThan(0.01, $averageTime);
     }
 }

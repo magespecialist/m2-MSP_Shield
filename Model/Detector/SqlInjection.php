@@ -29,9 +29,9 @@ use MSP\Shield\Api\ThreatInterfaceFactory;
 use PhpMyAdmin\SqlParser\Context;
 use PhpMyAdmin\SqlParser\Token;
 
-class Sqli implements DetectorInterface
+class SqlInjection implements DetectorInterface
 {
-    const CODE = 'sqli';
+    const CODE = 'sql_injection';
     const RESCODE_SQLI_INJECTION = 'sqli_injection';
 
     const CACHE_KEY_MAGENTO_TABLES = 'sqli/table_names';
@@ -93,14 +93,14 @@ class Sqli implements DetectorInterface
     protected function getMagentoTables()
     {
         if (is_null($this->magentoTables)) {
-            if ($this->cacheType->test(static::CACHE_KEY_MAGENTO_TABLES)) {
-                $this->magentoTables = unserialize($this->cacheType->load(static::CACHE_KEY_MAGENTO_TABLES));
+            if ($tables = $this->cacheType->load(static::CACHE_KEY_MAGENTO_TABLES)) {
+                $this->magentoTables = unserialize($tables);
             } else {
                 $tableNames = [];
                 $connection = $this->resourceConnection->getConnection();
                 $qry = $connection->query('show tables');
                 while ($tableName = $qry->fetchColumn(0)) {
-                    $tableNames[] = mb_strtolower($tableName);
+                    $tableNames[mb_strtolower($tableName)] = 1;
                 }
 
                 $this->cacheType->save(serialize($tableNames), static::CACHE_KEY_MAGENTO_TABLES);
@@ -118,15 +118,15 @@ class Sqli implements DetectorInterface
     protected function getMysqlFunctions()
     {
         if (is_null($this->mysqlFunctions)) {
-            if ($this->cacheType->test(static::CACHE_KEY_MYSQL_FUNCTION)) {
-                $this->mysqlFunctions = unserialize($this->cacheType->load(static::CACHE_KEY_MYSQL_FUNCTION));
+            if ($functions = $this->cacheType->load(static::CACHE_KEY_MYSQL_FUNCTION)) {
+                $this->mysqlFunctions = unserialize($functions);
             } else {
                 $mysqlFunctions = [];
 
                 Context::load();
                 foreach (Context::$KEYWORDS as $keyword => $flag) {
                     if ($flag & Token::FLAG_KEYWORD_FUNCTION) {
-                        $mysqlFunctions[] = strtoupper($keyword);
+                        $mysqlFunctions[mb_strtolower($keyword)] = 1;
                     }
                 }
 
@@ -145,15 +145,15 @@ class Sqli implements DetectorInterface
     protected function getMysqlKeywords()
     {
         if (is_null($this->mysqlKeywords)) {
-            if ($this->cacheType->test(static::CACHE_KEY_MYSQL_KEYWORDS)) {
-                $this->mysqlKeywords = unserialize($this->cacheType->load(static::CACHE_KEY_MYSQL_KEYWORDS));
+            if ($keywords = $this->cacheType->load(static::CACHE_KEY_MYSQL_KEYWORDS)) {
+                $this->mysqlKeywords = unserialize($keywords);
             } else {
                 $mysqlKeywords = [];
 
                 Context::load();
                 foreach (Context::$KEYWORDS as $keyword => $flag) {
                     if ($flag & Token::FLAG_KEYWORD_RESERVED) {
-                        $mysqlKeywords[] = strtoupper($keyword);
+                        $mysqlKeywords[mb_strtolower($keyword)] = 1;
                     }
                 }
 
@@ -172,17 +172,17 @@ class Sqli implements DetectorInterface
     protected function getMagentoFieldNames()
     {
         if (is_null($this->mysqlFields)) {
-            if ($this->cacheType->test(static::CACHE_KEY_MYSQL_FIELDS)) {
-                $this->mysqlFields = unserialize($this->cacheType->load(static::CACHE_KEY_MYSQL_FIELDS));
+            if ($names = $this->cacheType->load(static::CACHE_KEY_MYSQL_FIELDS)) {
+                $this->mysqlFields = unserialize($names);
             } else {
                 $mysqlFields = [];
 
                 $connection = $this->resourceConnection->getConnection();
                 $tables = $this->getMagentoTables();
-                foreach ($tables as $table) {
+                foreach ($tables as $table => $x) {
                     $fields = $connection->describeTable($table);
                     foreach ($fields as $field) {
-                        $mysqlFields[] = $field['COLUMN_NAME'];
+                        $mysqlFields[mb_strtolower($field['COLUMN_NAME'])] = 1;
                     }
                 }
 
@@ -203,7 +203,7 @@ class Sqli implements DetectorInterface
      */
     protected function getIsTableName($token)
     {
-        return in_array(mb_strtolower($token), $this->getMagentoTables());
+        return array_key_exists(mb_strtolower($token), $this->getMagentoTables());
     }
 
     /**
@@ -213,7 +213,7 @@ class Sqli implements DetectorInterface
      */
     protected function getIsFieldName($token)
     {
-        return in_array(mb_strtolower($token), $this->getMagentoFieldNames());
+        return array_key_exists(mb_strtolower($token), $this->getMagentoFieldNames());
     }
 
     /**
@@ -221,64 +221,72 @@ class Sqli implements DetectorInterface
      * @param string $token
      * @return bool
      */
-    protected function getIsKeyword($token)
+    protected function getIsMysqlKeyword($token)
     {
-        return in_array(mb_strtoupper($token), $this->getMysqlKeywords());
+        return array_key_exists(mb_strtolower($token), $this->getMysqlKeywords());
+    }
+
+    /**
+     * Return true if a token is a mysql function
+     * @param string $token
+     * @return bool
+     */
+    protected function getIsMysqlFunction($token)
+    {
+        return array_key_exists(mb_strtolower($token), $this->getMysqlFunctions());
     }
 
     /**
      * Encode query
      * @param $query
      * @param array $threats
-     * @return array
+     * @return string
      */
     protected function encodeQuery($query, array &$threats)
     {
-        $mysqlFunctions = $this->getMysqlFunctions();
-
         $dbOperations = [
-            'SELECT', 'INSERT', 'UPDATE', 'DROP', 'LOAD DATA', 'TRUNCATE', 'ALTER',
-            'RENAME', 'REPLACE', 'DELETE', 'DESC', 'DESCRIBE', 'SHUTDOWN', 'SHOW', 'BACKUP', 'RESTORE',
-            'UNION',
+            'select', 'insert', 'update', 'drop', 'load data', 'truncate', 'alter',
+            'rename', 'replace', 'delete', 'desc', 'describe', 'shutdown', 'show', 'backup', 'restore',
+            'union',
         ];
 
         $tableCreate = [
-            'CREATE'
+            'create'
         ];
 
         $tableOperationsOptions = [
-            'ALL', 'DISTINCT', 'DISTINCTROW', 'LOW_PRIORITY', 'HIGH_PRIORITY', 'STRAIGHT_JOIN', 'SQL_SMALL_RESULT',
-            'SQL_BIG_RESULT', 'SQL_BUFFER_RESULT', 'SQL_CACHE', 'SQL_NO_CACHE', 'SQL_CALC_FOUND_ROWS',
-            'DELAYED', 'IGNORE', 'INTO', 'FROM', 'SET', 'QUICK', 'TEMPORARY', 'CONCURRENT', 'LOCAL', 'INFILE',
-            'REPLACE', 'PARTITION', 'TABLE'
+            'all', 'distinct', 'distinctrow', 'low_priority', 'high_priority', 'straight_join', 'sql_small_result',
+            'sql_big_result', 'sql_buffer_result', 'sql_cache', 'sql_no_cache', 'sql_calc_found_rows',
+            'delayed', 'ignore', 'into', 'from', 'set', 'quick', 'temporary', 'concurrent', 'local', 'infile',
+            'replace', 'partition', 'table'
         ];
 
         $encodedQuery = [];
-        $tokens = preg_split('/(\W)/', $query, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+        $tokens = preg_split('/(\b)/', $query, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
         foreach ($tokens as $token) {
-            $token = strtoupper(trim($token));
+            $token = mb_strtolower(trim($token));
             if (!$token || in_array($token, ['.'])) {
                 continue;
             }
 
-            if (in_array($token, ['+', '=', '#', ')', '(', 'X', ',', ';'])) {
+            if (in_array($token, ['+', '=', '#', ')', '(', 'x', ',', ';'])) {
                 $encodedQuery[] = $token;
             } else if (is_numeric($token)) {
-                $encodedQuery[] = 'X';
+                $encodedQuery[] = 'x';
             } else if (in_array($token, $tableCreate)) {
-                $encodedQuery[] = 'C';
+                $encodedQuery[] = 'c';
             } else if (in_array($token, $dbOperations)) {
-                $encodedQuery[] = 'S';
+                $encodedQuery[] = 's';
             } else if (in_array($token, $tableOperationsOptions)) {
-                $encodedQuery[] = 'O';
-            } else if (in_array($token, $mysqlFunctions)) {
-                $encodedQuery[] = 'F';
+                $encodedQuery[] = 'o';
+            } else if ($this->getIsMysqlFunction($token)) {
+                $encodedQuery[] = 'f';
             } else if ($this->getIsTableName($token)) {
-                $encodedQuery[] = 'T';
+                $encodedQuery[] = 't';
             } else if ($this->getIsFieldName($token)) {
-                $encodedQuery[] = 'X';
-            } else if ($this->getIsKeyword($token)) {
-                $encodedQuery[] = 'K';
+                $encodedQuery[] = 'x';
+            } else if ($this->getIsMysqlKeyword($token)) {
+                $encodedQuery[] = 'k';
             } else {
                 $encodedQuery[] = 0;
             }
@@ -299,14 +307,21 @@ class Sqli implements DetectorInterface
     protected function getNormalizedQueryScenarios($originalQuery, array &$scenariosThreats)
     {
         $scenarios = [
-            $originalQuery,
-            "'$originalQuery'",
-            '"' . $originalQuery . '"',
-            "'$originalQuery",
-            "$originalQuery''",
-            '"' . $originalQuery,
-            $originalQuery . '"',
+            $originalQuery
         ];
+
+        if (strpos($originalQuery, '"') !== false) {
+            $scenarios[] = '"' . $originalQuery . '"';
+            $scenarios[] = '"' . $originalQuery;
+            $scenarios[] = $originalQuery . '"';
+        }
+
+        if (strpos($originalQuery, "'") !== false) {
+            $scenarios[] = "'$originalQuery'";
+            $scenarios[] = "'$originalQuery";
+            $scenarios[] = "$originalQuery'";
+        }
+
         $normalizedScenarios = [];
 
         for ($i = 0; $i < count($scenarios); $i++) {
@@ -366,8 +381,8 @@ class Sqli implements DetectorInterface
                 $modifiedQuery = preg_replace('/(\-\-|#).*$/', "", $modifiedQuery, -1, $otherCommentsCount);
             }
 
-            if (preg_match('/\W0x[0-9a-f]{32,}/i', $modifiedQuery) ||
-                preg_match('/\W0b(0|1){32,}/i', $modifiedQuery)
+            if (preg_match('/\b0x[0-9a-f]{32,}/i', $modifiedQuery) ||
+                preg_match('/\b0b(0|1){32,}/i', $modifiedQuery)
             ) {
                 $threat = $this->threatInterfaceFactory->create();
                 $threat
@@ -390,22 +405,22 @@ class Sqli implements DetectorInterface
             $modifiedQuery = str_ireplace(['&&', '||'], ' # ', $modifiedQuery);
             $modifiedQuery = str_replace(['<<', '>>', '&', '|', '^', '~', '+', '-', '%', '*', '/'], ' + ', $modifiedQuery);
             $modifiedQuery = str_ireplace(['<', '>', '=', '<=', '>=', '==', '!=', '<=>'], ' = ', $modifiedQuery);
-            $modifiedQuery = str_ireplace([' is null ', ' is not null '], ' =X ', $modifiedQuery);
+            $modifiedQuery = str_ireplace([' is null ', ' is not null '], ' =x ', $modifiedQuery);
 
-            $modifiedQuery = preg_replace('/(\W)(?:and|or|xor)(\W)/i', '\\1#\\2', $modifiedQuery);
-            $modifiedQuery = preg_replace('/(\W)(?:is\s+(?:not\s+)?null)(\W)/i', '\\1=X\\2', $modifiedQuery);
-            $modifiedQuery = preg_replace('/(\W)0x[0-9a-f]+(\W)/i', '\\1X\\2', $modifiedQuery);
-            $modifiedQuery = preg_replace('/(\W)0b[01]+(\W)/i', '\\1X\\2', $modifiedQuery);
-            $modifiedQuery = preg_replace('/(\W)\w?like(\W)/i', '\\1=\\2', $modifiedQuery);
-            $modifiedQuery = preg_replace('/(\W)(?:true|false)(\W)/i', '\\1X\\2', $modifiedQuery);
-            $modifiedQuery = preg_replace('/(\W)not(\W)/i', '\\1\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\b)(?:and|or|xor)(\b)/i', '\\1#\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\b)(?:is\s+(?:not\s+)?null)(\b)/i', '\\1=x\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\b)0x[0-9a-f]+(\b)/i', '\\1x\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\b)0b[01]+(\b)/i', '\\1x\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\b)\w?like(\b)/i', '\\1=\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\b)(?:true|false)(\b)/i', '\\1x\\2', $modifiedQuery);
+            $modifiedQuery = preg_replace('/(\b)not(\b)/i', '\\1\\2', $modifiedQuery);
 
             $scenariosThreats[$modifiedQuery] = $threats;
 
             if (
                 (mb_strpos($modifiedQuery, "'") === false) &&
                 (mb_strpos($modifiedQuery, '"') === false) &&
-                (trim($modifiedQuery) != 'X')
+                (trim($modifiedQuery) != 'x')
             ) {
                 $normalizedScenarios[] = $modifiedQuery;
             }
@@ -429,62 +444,63 @@ class Sqli implements DetectorInterface
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('SQL operator injection'),
                 'regex' => [
-                    '^X#' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
-                    '#X$' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
-                    'X#X' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '^(?:f|x)#' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    '#(?:f|x)$' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    '(?:f|x)#(?:f|x)' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '#(?:f|x)#' => DetectorInterface::SCORE_CRITICAL_MATCH,
 
-                    'X#0' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
-                    '0#X' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    '(?:f|x)#0' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    '0#(?:f|x)' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
                     '0#0' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
 
-                    'X=X' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '0=X' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
-                    'X=0' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    '(?:f|x)=x' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '0=(?:f|x)' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    '(?:f|x)=0' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
 
-                    '(?:0|X)#(?:0|X)=(?:0|X)' => DetectorInterface::SCORE_CRITICAL_MATCH, // 1 or a = b
-                    '(?:0|X)=(?:0|X)#(?:0|X)' => DetectorInterface::SCORE_CRITICAL_MATCH, // a = 1 or b
+                    '(?:0|x|f)#(?:0|x|f)=(?:0|x|f)' => DetectorInterface::SCORE_CRITICAL_MATCH, // 1 or a = b
+                    '(?:0|x|f)=(?:0|x|f)#(?:0|x|f)' => DetectorInterface::SCORE_CRITICAL_MATCH, // a = 1 or b
 
-                    'K' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH,
+                    'k' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH,
                 ]
             ], [
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('SQL operations injection'),
                 'regex' => [
-                    'F' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // MySQL functions without opening parenthesis
-                    'F\\(' => DetectorInterface::SCORE_CRITICAL_MATCH, // MySQL functions with opening parenthesis
+                    'f' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // MySQL functions without opening parenthesis
+                    'f\\(' => DetectorInterface::SCORE_CRITICAL_MATCH, // MySQL functions with opening parenthesis
 
-                    'S(?:O|K){0,8}T' => DetectorInterface::SCORE_CRITICAL_MATCH, // insert into tablename
-                    'S(?:O|K)' => DetectorInterface::SCORE_CRITICAL_MATCH, // insert into tablename
-                    '(?:O|K)S' => DetectorInterface::SCORE_CRITICAL_MATCH, // union select
+                    's(?:o|k){0,8}y' => DetectorInterface::SCORE_CRITICAL_MATCH, // insert into tablename
+                    's(?:o|k)' => DetectorInterface::SCORE_CRITICAL_MATCH, // insert into tablename
+                    '(?:o|k)s' => DetectorInterface::SCORE_CRITICAL_MATCH, // union select
 
-                    '(?:O|K)T' => DetectorInterface::SCORE_CRITICAL_MATCH, // from tablename
-                    'O0' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH, // from tablename
+                    '(?:o|k)t' => DetectorInterface::SCORE_CRITICAL_MATCH, // from tablename
+                    'o0' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH, // from tablename
 
-                    'ST' => DetectorInterface::SCORE_CRITICAL_MATCH, // desc tablename
-                    'S0' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // desc tablename
+                    'st' => DetectorInterface::SCORE_CRITICAL_MATCH, // desc tablename
+                    's0' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // desc tablename
 
-                    'S{1,10}O' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // select ... from
-                    'S(?:(?:X|0),)+O' => DetectorInterface::SCORE_CRITICAL_MATCH, // select a,b,c from
-                    'S\\+O' => DetectorInterface::SCORE_CRITICAL_MATCH, // select * from
-                    'CO\\w{0,8}\\(' => DetectorInterface::SCORE_CRITICAL_MATCH, // Create table
-                    'SO*0,' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    's{1,10}o' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // select ... from
+                    's(?:(?:x|0|f),)+o' => DetectorInterface::SCORE_CRITICAL_MATCH, // select a,b,c from
+                    's\\+o' => DetectorInterface::SCORE_CRITICAL_MATCH, // select * from
+                    'co\\w{0,8}\\(' => DetectorInterface::SCORE_CRITICAL_MATCH, // Create table
+                    'so*0,' => DetectorInterface::SCORE_CRITICAL_MATCH,
 
-                    'K{2,}' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // Order by
-                    'K{2,}X0*$' => DetectorInterface::SCORE_CRITICAL_MATCH, // Order by x desc
+                    'k{2,}' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // Order by
+                    'k{2,}x0*$' => DetectorInterface::SCORE_CRITICAL_MATCH, // Order by x desc
                 ],
             ], [
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('Stacked query'),
                 'regex' => [
                     '^;' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
-                    ';(S|F)' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '^X+;' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
+                    ';(s|f)' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '^x+;' => DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH,
                 ]
             ], [
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('Arguments injection'),
                 'regex' => [
-                    'X\,' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
+                    'x\,' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
                 ]
             ]
         ];

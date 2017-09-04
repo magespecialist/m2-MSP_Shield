@@ -22,19 +22,28 @@ namespace MSP\Shield\Model\Processor;
 
 use MSP\Shield\Api\ProcessorInterface;
 
-class Basic implements ProcessorInterface
+class Charset implements ProcessorInterface
 {
     /**
-     * Return scanning results
+     * Dig field and return true if matched
      * @param string $fieldName
      * @param string &$fieldValue
      * @return boolean
      */
     public function processValue($fieldName, &$fieldValue)
     {
-        $originalValue = $fieldValue;
-        $fieldValue = preg_replace("/[\r\n\s]+/", ' ', trim($originalValue));
+        $utf8 = utf8_decode($fieldValue);
+        if ($utf8 !== $fieldValue) {
+            $fieldValue = $utf8;
+            return true;
+        }
 
-        return ($originalValue !== $fieldValue);
+        $utf7 = mb_convert_encoding($fieldValue, 'UTF-8', 'UTF-7');
+        if ($utf7 !== $fieldValue) {
+            $fieldValue = $utf7;
+            return true;
+        }
+
+        return false;
     }
 }

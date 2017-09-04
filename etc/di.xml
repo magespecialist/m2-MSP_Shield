@@ -41,12 +41,28 @@
             <argument name="processors" xsi:type="array">
                 <item name="basic" xsi:type="object">MSP\Shield\Model\Processor\Basic</item>
                 <item name="unpack" xsi:type="object">MSP\Shield\Model\Processor\Unpack</item>
+                <item name="charset" xsi:type="object">MSP\Shield\Model\Processor\Charset</item>
             </argument>
             <argument name="filters" xsi:type="array">
                 <item name="literal" xsi:type="object">MSP\Shield\Model\Filter\Literal</item>
             </argument>
             <argument name="detectors" xsi:type="array">
-                <item name="sqli" xsi:type="object">MSP\Shield\Model\Detector\Sqli</item>
+                <item name="sql_injection" xsi:type="object">MSP\Shield\Model\Detector\SqlInjection</item>
+                <item name="xss" xsi:type="object">MSP\Shield\Model\Detector\Xss</item>
+                <item name="language" xsi:type="object">MSP\Shield\Model\Detector\Language</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Do not unpack following values -->
+    <type name="MSP\Shield\Model\Processor\Unpack">
+        <arguments>
+            <argument name="skip" xsi:type="array">
+                <item name="COOKIE.form_key" xsi:type="string">COOKIE.form_key</item>
+                <item name="POST.form_key" xsi:type="string">POST.form_key</item>
+                <item name="GET.form_key" xsi:type="string">GET.form_key</item>
+                <item name="COOKIE.private_content_version" xsi:type="string">COOKIE.private_content_version</item>
+                <item name="GET.uenc" xsi:type="string">GET.uenc</item>
             </argument>
         </arguments>
     </type>
