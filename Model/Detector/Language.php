@@ -64,13 +64,15 @@ class Language implements DetectorInterface
                 'regex' => [
                     '_encode\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     '_decode\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    'gzinflate\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    'gzdeflate\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    'str_rot13\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    'crypt\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    'crc32\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '(?:raw)?url(?:encode|decode)\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '(?:chr|ord)\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'gzinflate\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'gzdeflate\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'str_rot13\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'crypt\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'crc32\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '(?:raw)?url(?:encode|decode)\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '(?:chr|ord)\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'atob\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '\\(\\s*\\)' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
                 ],
             ], [
                 'id' => static::RESCODE_SCRIPT_INJECTION,
@@ -80,13 +82,23 @@ class Language implements DetectorInterface
                     '(?:preg|ereg|eregi)_(?:replace|match|split|filter)'
                     . '(?:[\\w\\_]+)*\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
                 ]
+            ], [
+                'id' => static::RESCODE_SCRIPT_INJECTION,
+                'reason' => __('Javascript brainfuck detected'),
+                'regex' => [
+                    '!\\s*!\\s*\\[\\s*\\]' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '\\+\\s*\\[\\s*\\]' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                ]
             ]
         ];
 
         $this->detectorRegex->scanRegex($this, $regex, $fieldValue, $threats);
 
         $encoded = [];
-        if (preg_match('/\b(?:and|or|xor)\b/i', $fieldValue)) {
+        if (preg_match('/\b(?:and|or|xor|not)\b/i', $fieldValue)) {
+            $encoded[] = 'L'; // Logical match
+        }
+        if (preg_match('/\![^=]/i', $fieldValue)) {
             $encoded[] = 'L'; // Logical match
         }
         if (preg_match('/[^\|&](?:&&|\|\|)[^\|&]/', $fieldValue)) {
@@ -124,16 +136,24 @@ class Language implements DetectorInterface
     protected function evaluateEncodedQuery($encodedQuery, array &$threats)
     {
         if (
-            (strlen($encodedQuery) > 2) &&
-            preg_match('/.*E.*F/', $encodedQuery)
+            (strlen($encodedQuery) > 2)
         ) {
+            if (preg_match('/.*E.*F/', $encodedQuery) ||
+                preg_match('/.*F.*L/', $encodedQuery) ||
+                ($encodedQuery > 3)
+            ) {
+                $score = DetectorInterface::SCORE_CRITICAL_MATCH;
+            } else {
+                $score = DetectorInterface::SCORE_SUSPICIOUS_MATCH;
+            }
+
             $threat = $this->threatInterfaceFactory->create();
             $threat
                 ->setDetector($this)
                 ->setId(static::RESCODE_SCRIPT_INJECTION)
                 ->setAdditional(['encoded' => $encodedQuery])
                 ->setReason(__('Code detected'))
-                ->setScore(DetectorInterface::SCORE_CRITICAL_MATCH);
+                ->setScore($score);
 
             $threats[] = $threat;
         }
