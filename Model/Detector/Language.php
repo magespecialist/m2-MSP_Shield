@@ -87,25 +87,25 @@ class Language implements DetectorInterface
 
         $encoded = [];
         if (preg_match('/\b(?:and|or|xor)\b/i', $fieldValue)) {
-            $encoded[] = 'L';
+            $encoded[] = 'L'; // Logical match
         }
         if (preg_match('/[^\|&](?:&&|\|\|)[^\|&]/', $fieldValue)) {
-            $encoded[] = 'L';
+            $encoded[] = 'L'; // Logical match
         }
         if (preg_match('/[^\.:](?:\.|\->|::)[^\.:]/i', $fieldValue)) {
-            $encoded[] = 'M';
+            $encoded[] = 'M'; // Method call match
         }
         if (preg_match('/[^=]=[^~=]/i', $fieldValue)) {
-            $encoded[] = 'E';
+            $encoded[] = 'E'; // Assignment match
         }
         if (preg_match('/(?:<|>|<=|>=|==|===|!=|==|<=>|=~)/i', $fieldValue)) {
-            $encoded[] = 'C';
+            $encoded[] = 'C'; // Comparison match
         }
         if (preg_match('/(?:\+|\-|%|\||&|<<|>>|~|\^|\*)=?/i', $fieldValue)) {
-            $encoded[] = 'P';
+            $encoded[] = 'O'; // Operation match
         }
         if (preg_match('/(?:\{|\[|\(|\)|\]|\})/i', $fieldValue)) {
-            $encoded[] = 'F';
+            $encoded[] = 'F'; // Function match
         }
 
         $encoded = array_unique($encoded);
