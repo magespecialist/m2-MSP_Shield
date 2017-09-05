@@ -85,27 +85,35 @@ class Language implements DetectorInterface
 
         $this->detectorRegex->scanRegex($this, $regex, $fieldValue, $threats);
 
-        // Encode operators
-        $fieldValue = str_replace('#', '', $fieldValue); // # is a reserved char, we need this free
-        $fieldValue = preg_replace('/\b(and|or|xor)\b/i', '#', $fieldValue);
-        $fieldValue = preg_replace('/[\w\p{L}\p{N}\\\\]+/', '', $fieldValue);
-        $fieldValue = str_replace(['&&', '||'], '#', $fieldValue);
-        $fieldValue = str_replace([':=', '=', '!'], '?', $fieldValue);
-        $fieldValue = str_replace(['+', '-', '%', '|', '&', '<<', '>>', '~', '^'], '+', $fieldValue);
-        $fieldValue = str_replace(['<', '>', '='], '=', $fieldValue);
-        $fieldValue = str_replace(['{', '[', '(', '}', ']', ')'], '(', $fieldValue);
-        $fieldValue = str_replace(["'", '"'], '"', $fieldValue);
+        $encoded = [];
+        if (preg_match('/\b(?:and|or|xor)\b/i', $fieldValue)) {
+            $encoded[] = 'L';
+        }
+        if (preg_match('/[^\|&](?:&&|\|\|)[^\|&]/', $fieldValue)) {
+            $encoded[] = 'L';
+        }
+        if (preg_match('/[^\.:](?:\.|\->|::)[^\.:]/i', $fieldValue)) {
+            $encoded[] = 'M';
+        }
+        if (preg_match('/[^=]=[^~=]/i', $fieldValue)) {
+            $encoded[] = 'E';
+        }
+        if (preg_match('/(?:<|>|<=|>=|==|===|!=|==|<=>|=~)/i', $fieldValue)) {
+            $encoded[] = 'C';
+        }
+        if (preg_match('/(?:\+|\-|%|\||&|<<|>>|~|\^|\*)=?/i', $fieldValue)) {
+            $encoded[] = 'P';
+        }
+        if (preg_match('/(?:\{|\[|\(|\)|\]|\})/i', $fieldValue)) {
+            $encoded[] = 'F';
+        }
 
-        // Remove noise
-        $fieldValue = str_replace(['.', ',', ':'], '', $fieldValue);
-        $fieldValue = preg_replace('/\s+/', '', $fieldValue);
+        $encoded = array_unique($encoded);
+        sort($encoded);
 
-        // Verify patterns presence
-        $fieldValue = array_unique(str_split($fieldValue));
-        sort($fieldValue);
-        $fieldValue = implode('', $fieldValue);
+        $encoded = implode('', $encoded);
 
-        return $fieldValue;
+        return $encoded;
     }
 
     /**
@@ -115,24 +123,17 @@ class Language implements DetectorInterface
      */
     protected function evaluateEncodedQuery($encodedQuery, array &$threats)
     {
-        $score = 0;
-
-        $matchingSymbols = ['|', '?', '+', '=', '(', '"', ';'];
-        for ($i = 0; $i < count($matchingSymbols); $i++) {
-            if (strpos($encodedQuery, $matchingSymbols[$i]) !== false) {
-                $score++;
-            }
-        }
-
-        if ($score > 2) {
+        if (
+            (strlen($encodedQuery) > 2) &&
+            preg_match('/.*E.*F/', $encodedQuery)
+        ) {
             $threat = $this->threatInterfaceFactory->create();
             $threat
                 ->setDetector($this)
                 ->setId(static::RESCODE_SCRIPT_INJECTION)
-                ->setAdditional(['query' => $encodedQuery])
-                ->setReason(__('Programming language detected'))
-                ->setScore(($score > 2) ? DetectorInterface::SCORE_CRITICAL_MATCH :
-                    DetectorInterface::SCORE_SUSPICIOUS_MATCH);
+                ->setAdditional(['encoded' => $encodedQuery])
+                ->setReason(__('Code detected'))
+                ->setScore(DetectorInterface::SCORE_CRITICAL_MATCH);
 
             $threats[] = $threat;
         }
