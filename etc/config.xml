@@ -34,12 +34,7 @@ COOKIE.ls_mage-cache-storage
 COOKIE.mage-messages
 GET.__utmz
 GET.__utmc</params_whitelist>
-                <uri_whitelist>/$admin/cms/page/save
-/$admin/cms/block/save
-/$admin/widget_instance/validate
-/$admin/widget_instance/save
-/$admin/catalog/product/save
-/$admin/catalog/category/save</uri_whitelist>
+                <uri_whitelist></uri_whitelist>
             </general>
         </msp_securitysuite_shield>
     </default>

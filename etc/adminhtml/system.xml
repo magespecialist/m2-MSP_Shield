@@ -60,7 +60,7 @@
                 </field>
                 <field canRestore="1" id="uri_whitelist" translate="label" type="textarea" sortOrder="70" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>URI Whitelist</label>
-                    <comment>One URI per line. Use "$admin" for admin backend base URI</comment>
+                    <comment>One URI per line</comment>
                 </field>
             </group>
         </section>
