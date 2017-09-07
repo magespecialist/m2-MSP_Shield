@@ -107,16 +107,11 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
             "my@email.com' ORDER BY 19-- mmbG"
         ];
 
-        $timeStart = microtime(true);
         foreach ($tests as $test) {
             /** @var ScanResultInterface $scanResult */
             $scanResult = $detector->scanRequest(['POST' => [$fieldName => $test]]);
             $this->assertGreaterThanOrEqual(DetectorInterface::SCORE_CRITICAL_MATCH, $scanResult->getScore(), "Failed to detect attack: " . $test);
         }
-        $timeEnd = microtime(true);
-
-        $averageTime = ($timeEnd - $timeStart) / count($tests);
-        echo $averageTime."\n";
     }
 
     public function testUncertainContents()
@@ -130,7 +125,6 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
             "4 or more",
         ];
 
-        $timeStart = microtime(true);
         foreach ($tests as $test) {
             /** @var ScanResultInterface $scanResult */
             $scanResult = $detector->scanRequest(['POST' => [$fieldName => $test]]);
@@ -140,10 +134,6 @@ class IpsTest extends \Magento\TestFramework\TestCase\AbstractController
             $this->assertGreaterThan(10, $scanResult->getScore(),
                 "Possible threat not detected: <" . $test . '>');
         }
-        $timeEnd = microtime(true);
-
-        $averageTime = ($timeEnd - $timeStart) / count($tests);
-        echo $averageTime."\n";
     }
 
     public function testNonDangerousContents()

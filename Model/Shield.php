@@ -23,6 +23,7 @@ namespace MSP\Shield\Model;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Module\Dir\Reader;
+use MSP\SecuritySuiteCommon\Api\LockDownInterface;
 use MSP\SecuritySuiteCommon\Api\UtilsInterface;
 use MSP\Shield\Api\IpsInterface;
 use MSP\Shield\Api\ScanResultInterface;
@@ -56,11 +57,17 @@ class Shield implements ShieldInterface
      */
     private $ips;
 
+    /**
+     * @var LockDownInterface
+     */
+    private $lockDown;
+
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         Reader $reader,
         IpsInterface $ips,
         DirectoryList $directoryList,
+        LockDownInterface $lockDown,
         UtilsInterface $utils
     ) {
         $this->scopeConfig = $scopeConfig;
@@ -68,6 +75,7 @@ class Shield implements ShieldInterface
         $this->reader = $reader;
         $this->utils = $utils;
         $this->ips = $ips;
+        $this->lockDown = $lockDown;
     }
 
     /**
@@ -82,7 +90,10 @@ class Shield implements ShieldInterface
 
         $whiteList = trim($this->scopeConfig->getValue(ShieldInterface::XML_PATH_URI_WHITELIST));
         $whiteList = preg_split('/[\r\n\s,]+/', $whiteList);
-        $whiteList[] = '/msp_security_suite/stop/index/';
+
+        if (!$this->lockDown->getStealthMode()) {
+            $whiteList[] = '/msp_security_suite/stop/index/';
+        }
 
         $requestUri = $this->utils->getSanitizedUri();
         foreach ($whiteList as $uri) {
@@ -179,5 +190,4 @@ class Shield implements ShieldInterface
     {
         return intval($this->scopeConfig->getValue(ShieldInterface::XML_PATH_MIN_IMPACT_STOP));
     }
-
 }
