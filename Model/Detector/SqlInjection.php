@@ -265,7 +265,7 @@ class SqlInjection implements DetectorInterface
         $tokens = preg_split('/(\b)/', $query, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
         foreach ($tokens as $token) {
             $token = mb_strtolower(trim($token));
-            if (!$token || in_array($token, ['.'])) {
+            if (!strlen($token) || in_array($token, ['.'])) {
                 continue;
             }
 
@@ -466,7 +466,7 @@ class SqlInjection implements DetectorInterface
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('SQL operations injection'),
                 'regex' => [
-                    'f' => DetectorInterface::SCORE_SUSPICIOUS_MATCH, // MySQL functions without opening parenthesis
+//                    'f' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH, // MySQL functions without opening parenthesis
                     'f\\(' => DetectorInterface::SCORE_CRITICAL_MATCH, // MySQL functions with opening parenthesis
 
                     's(?:o|k){0,8}y' => DetectorInterface::SCORE_CRITICAL_MATCH, // insert into tablename
@@ -500,7 +500,7 @@ class SqlInjection implements DetectorInterface
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('Arguments injection'),
                 'regex' => [
-                    'x\,' => DetectorInterface::SCORE_SUSPICIOUS_MATCH,
+                    'x\,' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH,
                 ]
             ]
         ];

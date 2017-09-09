@@ -25,16 +25,17 @@ use MSP\Shield\Api\ProcessorInterface;
 class Basic implements ProcessorInterface
 {
     /**
-     * Return scanning results
+     * Dig field and return true if matched
      * @param string $fieldName
      * @param string &$fieldValue
-     * @return boolean
+     * @return string
      */
     public function processValue($fieldName, &$fieldValue)
     {
         $originalValue = $fieldValue;
-        $fieldValue = preg_replace("/[\r\n\s]+/", ' ', trim($originalValue));
+        $res = preg_replace("/[\r\n\s]+/", ' ', trim($fieldValue));
+        $fieldValue = $res;
 
-        return ($originalValue !== $fieldValue);
+        return ($originalValue !== $fieldValue) ? ProcessorInterface::RES_REPLACE : ProcessorInterface::RES_NO_MATCH;
     }
 }

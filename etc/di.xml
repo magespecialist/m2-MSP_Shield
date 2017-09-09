@@ -41,7 +41,7 @@
             <argument name="processors" xsi:type="array">
                 <item name="basic" xsi:type="object">MSP\Shield\Model\Processor\Basic</item>
                 <item name="unpack" xsi:type="object">MSP\Shield\Model\Processor\Unpack</item>
-                <item name="charset" xsi:type="object">MSP\Shield\Model\Processor\Charset</item>
+                <!--<item name="charset" xsi:type="object">MSP\Shield\Model\Processor\Charset</item>-->
             </argument>
             <argument name="filters" xsi:type="array">
                 <item name="literal" xsi:type="object">MSP\Shield\Model\Filter\Literal</item>

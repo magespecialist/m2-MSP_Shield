@@ -1,4 +1,5 @@
 <?php
+
 namespace MSP\Shield\Model;
 
 use Magento\Framework\Registry;
@@ -15,17 +16,14 @@ class Ips implements IpsInterface
      * @var DetectorInterface[]
      */
     private $detectors;
-
     /**
      * @var FilterInterface[]
      */
     private $filters;
-
     /**
      * @var ProcessorInterface[]
      */
     private $processors;
-
     /**
      * @var ScanResultInterfaceFactory
      */
@@ -36,7 +34,8 @@ class Ips implements IpsInterface
         $processors = [],
         $filters = [],
         $detectors = []
-    ) {
+    )
+    {
         $this->detectors = $detectors;
         $this->filters = $filters;
         $this->processors = $processors;
@@ -53,17 +52,30 @@ class Ips implements IpsInterface
     {
         if ($fieldValue) {
             if (is_string($fieldValue)) {
-                $preFieldValue = $fieldValue;
-
                 foreach ($this->processors as $processor) {
-                    if ($processor->processValue($fieldName, $fieldValue)) {
+                    $preFieldValue = $fieldValue;
+                    $values[] = $preFieldValue;
+                    $res = $processor->processValue($fieldName, $fieldValue);
+
+                    // Remove old value, so the new one can replace it
+                    if ($res === ProcessorInterface::RES_REPLACE) {
+                        while (($n = array_search($preFieldValue, $values)) !== false) {
+                            unset($values[$n]);
+                        }
+                    }
+
+                    if (is_array($fieldValue)) {
+                        break;
+                    }
+
+                    if ($res === ProcessorInterface::RES_SPAWN) {
+                        $values[] = $fieldValue;
+                    }
+
+                    if ($res !== ProcessorInterface::RES_NO_MATCH) {
                         $this->runProcessors($fieldName, $fieldValue, $values);
                         break;
                     }
-                }
-
-                if (!is_array($fieldValue)) {
-                    $values[] = $preFieldValue;
                 }
             }
 
@@ -102,7 +114,6 @@ class Ips implements IpsInterface
                             ];
                             $scanThreat->setAdditional($additional);
                         }
-
                         $threats = array_merge($threats, $scanThreats);
                     }
                 }
@@ -123,12 +134,10 @@ class Ips implements IpsInterface
             if ($res == FilterInterface::MUST_SCAN) {
                 return true;
             }
-
             if ($res == FilterInterface::NO_SCAN) {
                 return false;
             }
         }
-
         return true;
     }
 
@@ -143,7 +152,6 @@ class Ips implements IpsInterface
         foreach ($request as $area => $params) {
             foreach ($params as $k => $v) {
                 $fieldKey = $area . '.' . $k;
-
                 $possibleValues = [];
                 $this->runProcessors($fieldKey, $v, $possibleValues);
                 $possibleValues = array_unique($possibleValues);
@@ -159,7 +167,6 @@ class Ips implements IpsInterface
         $scanResult = $this->scanResultInterfaceFactory->create([
             'threats' => $threats,
         ]);
-
         return $scanResult;
     }
 }

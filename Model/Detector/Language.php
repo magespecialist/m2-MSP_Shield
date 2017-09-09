@@ -78,6 +78,11 @@ class Language implements DetectorInterface
                 'id' => static::RESCODE_SCRIPT_INJECTION,
                 'reason' => __('Code execution attempt'),
                 'regex' => [
+                    '\\`.+?\\`' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'exec\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'system\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'passthru\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'popen\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     'eval\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     '(?:preg|ereg|eregi)_(?:replace|match|split|filter)'
                     . '(?:[\\w\\_]+)*\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,

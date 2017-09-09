@@ -22,11 +22,15 @@ namespace MSP\Shield\Api;
 
 interface ProcessorInterface
 {
+    const RES_NO_MATCH = 'no-match';
+    const RES_REPLACE = 'replace';
+    const RES_SPAWN = 'spawn';
+
     /**
      * Dig field and return true if matched
      * @param string $fieldName
      * @param string &$fieldValue
-     * @return boolean
+     * @return string
      */
     public function processValue($fieldName, &$fieldValue);
 }

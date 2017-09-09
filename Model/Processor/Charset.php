@@ -32,17 +32,17 @@ class Charset implements ProcessorInterface
      */
     public function processValue($fieldName, &$fieldValue)
     {
-        $utf8 = utf8_decode($fieldValue);
-        if ($utf8 !== $fieldValue) {
-            $fieldValue = $utf8;
-            return true;
-        }
-
-        $utf7 = mb_convert_encoding($fieldValue, 'UTF-8', 'UTF-7');
-        if ($utf7 !== $fieldValue) {
-            $fieldValue = $utf7;
-            return true;
-        }
+//        $utf8 = utf8_decode($fieldValue);
+//        if ($utf8 !== $fieldValue) {
+//            $fieldValue = $utf8;
+//            return true;
+//        }
+//
+//        $utf7 = mb_convert_encoding($fieldValue, 'UTF-8', 'UTF-7');
+//        if ($utf7 !== $fieldValue) {
+//            $fieldValue = $utf7;
+//            return true;
+//        }
 
         return false;
     }

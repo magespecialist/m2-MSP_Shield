@@ -260,9 +260,11 @@ class Xss implements DetectorInterface
                 'id' => static::RESCODE_SCRIPT_INJECTION,
                 'reason' => __('JS injection'),
                 'regex' => [
-                    'location\\.href' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'location\\s*\\.\\s*href' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     '\\.to(\\w{3,5})string\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '(?:this|window|top|parent|frames|self|content)\\.(?:location|document)' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'alert\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '(?:this|window|top|parent|frames|self|content)\\s*\\.\\s*(?:location|document)' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    'document\\s*\\.\\s*\\w+' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     'getelementby(?:names|id|classname|tag|tagname)\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     'queryselector(?:all)?\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
                 ]

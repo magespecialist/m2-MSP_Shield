@@ -29,7 +29,6 @@ class Unpack implements ProcessorInterface
      * @var DecoderInterface
      */
     private $decoder;
-
     /**
      * @var array
      */
@@ -38,7 +37,8 @@ class Unpack implements ProcessorInterface
     public function __construct(
         DecoderInterface $decoder,
         array $skip = []
-    ) {
+    )
+    {
         $this->decoder = $decoder;
         $this->skip = $skip;
     }
@@ -47,12 +47,19 @@ class Unpack implements ProcessorInterface
      * Return scanning results
      * @param string $fieldName
      * @param string &$fieldValue
-     * @return boolean
+     * @return string
      */
     public function processValue($fieldName, &$fieldValue)
     {
         if (in_array($fieldName, $this->skip)) {
-            return false;
+            return ProcessorInterface::RES_NO_MATCH;
+        }
+
+        // Check if it is an html encoded string
+        $res = html_entity_decode($fieldValue, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($res !== $fieldValue) {
+            $fieldValue = $res;
+            return ProcessorInterface::RES_REPLACE;
         }
 
         // Check if it is a base64 string
@@ -61,7 +68,7 @@ class Unpack implements ProcessorInterface
         ) {
             if ($res = base64_decode($fieldValue)) {
                 $fieldValue = $res;
-                return true;
+                return ProcessorInterface::RES_SPAWN;
             }
         }
 
@@ -74,7 +81,7 @@ class Unpack implements ProcessorInterface
         ) {
             try {
                 $fieldValue = $this->decoder->decode($fieldValue);
-                return true;
+                return ProcessorInterface::RES_REPLACE;
             } catch (\Exception $e) {
             }
         }
@@ -83,7 +90,7 @@ class Unpack implements ProcessorInterface
         $urlDecoded = urldecode($fieldValue);
         if ($urlDecoded !== $fieldValue) {
             $fieldValue = $urlDecoded;
-            return true;
+            return ProcessorInterface::RES_SPAWN;
         }
 
         // Check PHP serialized variable
@@ -91,12 +98,12 @@ class Unpack implements ProcessorInterface
             try {
                 if ($res = unserialize($fieldValue)) {
                     $fieldValue = $res;
-                    return true;
+                    return ProcessorInterface::RES_REPLACE;
                 }
             } catch (\Exception $e) {
             }
         }
 
-        return false;
+        return ProcessorInterface::RES_NO_MATCH;
     }
 }
