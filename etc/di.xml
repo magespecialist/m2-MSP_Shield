@@ -63,6 +63,7 @@
                 <item name="GET.form_key" xsi:type="string">GET.form_key</item>
                 <item name="COOKIE.private_content_version" xsi:type="string">COOKIE.private_content_version</item>
                 <item name="GET.uenc" xsi:type="string">GET.uenc</item>
+                <item name="GET.token" xsi:type="string">GET.token</item>
             </argument>
         </arguments>
     </type>

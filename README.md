@@ -21,8 +21,10 @@ You will have an high level of protection against 0-day vulnerabilities, code in
 
 From command line: 
 
-`composer require msp/shield`<br />
-`php bin/magento setup:upgrade`
+```
+composer require msp/shield
+php bin/magento setup:upgrade
+```
 
 **2. Enable and configure from your Magento backend config**
 
@@ -45,9 +47,13 @@ to verify the correct configuration of MSP Shield.
 
 If you correctly installed and configured MSP Shield, an emergency stop screen will appear.
 
-## Hack Attempt detected
+## Hack Attempt detected (with stealth mode disabled)
 
 <img src="https://raw.githubusercontent.com/magespecialist/m2-MSP_Shield/master/screenshots/detected.png" />
+
+## Hack Attempt detected (with stealth mode enabled)
+
+<img src="https://raw.githubusercontent.com/magespecialist/m2-MSP_Shield/master/screenshots/detected_stealth.png" />
 
 ## Logged entries ##
 
