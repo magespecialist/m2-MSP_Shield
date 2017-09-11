@@ -506,27 +506,6 @@ class SqlInjection implements DetectorInterface
         ];
 
         $this->detectorRegex->scanRegex($this, $regex, $encodedQuery, $threats);
-
-//        if (strlen($encodedQuery) > 4) {
-//            $neutralTokens = substr_count($encodedQuery, '0') + substr_count($encodedQuery, '1');
-//            if ($neutralTokens < strlen($encodedQuery) / 2) {
-//                $score = DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-//                $score += substr_count($encodedQuery, '#') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-//                $score += substr_count($encodedQuery, 'X') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-//                $score += substr_count($encodedQuery, '=') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-//                $score += substr_count($encodedQuery, '+') * DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
-//
-//                $threat = $this->threatInterfaceFactory->create();
-//                $threat
-//                    ->setDetector($this)
-//                    ->setId(static::RESCODE_SQLI_INJECTION)
-//                    ->setAdditional(['encoded' => $encodedQuery])
-//                    ->setReason(__('Suspicious commands sequence'))
-//                    ->setScore($score);
-//
-//                $threats[] = $threat;
-//            }
-//        }
     }
 
     /**

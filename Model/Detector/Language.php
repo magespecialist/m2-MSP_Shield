@@ -89,7 +89,7 @@ class Language implements DetectorInterface
                 ]
             ], [
                 'id' => static::RESCODE_SCRIPT_INJECTION,
-                'reason' => __('Javascript brainfuck detected'),
+                'reason' => __('JS-fuck detected'),
                 'regex' => [
                     '!\\s*!\\s*\\[\\s*\\]' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     '\\+\\s*\\[\\s*\\]' => DetectorInterface::SCORE_CRITICAL_MATCH,
@@ -100,34 +100,33 @@ class Language implements DetectorInterface
         $this->detectorRegex->scanRegex($this, $regex, $fieldValue, $threats);
 
         $encoded = [];
-        if (preg_match('/\b(?:and|or|xor|not)\b/i', $fieldValue)) {
+        if (preg_match('/\b(?:and|or|xor|not)\b/i', $fieldValue, $matches)) {
             $encoded[] = 'L'; // Logical match
         }
-        if (preg_match('/\![^=]/i', $fieldValue)) {
+        if (preg_match('/\![^=]/i', $fieldValue, $matches)) {
             $encoded[] = 'L'; // Logical match
         }
-        if (preg_match('/[^\|&](?:&&|\|\|)[^\|&]/', $fieldValue)) {
+        if (preg_match('/[^\|&](?:&&|\|\|)[^\|&]/', $fieldValue, $matches)) {
             $encoded[] = 'L'; // Logical match
         }
-        if (preg_match('/[^\.:](?:\.|\->|::)[^\.:]/i', $fieldValue)) {
+        if (preg_match('/(?:\w|\)|\]|\/)\\s*(?:\.|\->|::)\\s*(\w|_)/i', $fieldValue, $matches)) {
             $encoded[] = 'M'; // Method call match
         }
-        if (preg_match('/[^=]=[^~=]/i', $fieldValue)) {
+        if (preg_match('/(?:=<>~)/i', $fieldValue, $matches)) {
             $encoded[] = 'E'; // Assignment match
         }
-        if (preg_match('/(?:<|>|<=|>=|==|===|!=|==|<=>|=~)/i', $fieldValue)) {
-            $encoded[] = 'C'; // Comparison match
-        }
-        if (preg_match('/(?:\+|\-|%|\||&|<<|>>|~|\^|\*)=?/i', $fieldValue)) {
+        if (preg_match('/(?:\+|\-|%|\||&|<<|>>|~|\^|\*)=?/i', $fieldValue, $matches)) {
             $encoded[] = 'O'; // Operation match
         }
-        if (preg_match('/(?:\{|\[|\(|\)|\]|\})/i', $fieldValue)) {
+        if (preg_match('/(?:\{|\})/i', $fieldValue, $matches)) {
             $encoded[] = 'F'; // Function match
+        }
+        if (preg_match('/(?:\[|\(|\)|\])/i', $fieldValue, $matches)) {
+            $encoded[] = 'P'; // Parenthesis match
         }
 
         $encoded = array_unique($encoded);
         sort($encoded);
-
         $encoded = implode('', $encoded);
 
         return $encoded;
@@ -143,13 +142,13 @@ class Language implements DetectorInterface
         if (
             (strlen($encodedQuery) > 2)
         ) {
-            if (preg_match('/.*E.*F/', $encodedQuery) ||
-                preg_match('/.*F.*L/', $encodedQuery) ||
-                ($encodedQuery > 3)
+            if (preg_match('/.*F.*M.*P/', $encodedQuery) ||
+                preg_match('/.*F.*L.*P/', $encodedQuery) ||
+                strlen($encodedQuery > 4)
             ) {
                 $score = DetectorInterface::SCORE_CRITICAL_MATCH;
             } else {
-                $score = DetectorInterface::SCORE_SUSPICIOUS_MATCH;
+                $score = DetectorInterface::SCORE_HIGH_PROBABILITY_MATCH;
             }
 
             $threat = $this->threatInterfaceFactory->create();
