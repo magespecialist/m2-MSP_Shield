@@ -22,6 +22,8 @@ namespace MSP\Shield\Api;
 
 interface ThreatInterface
 {
+    const XML_PATH_DEBUG = 'msp_securitysuite_shield/general/debug';
+
     /**
      * Get threat identification
      * @return string
@@ -59,6 +61,12 @@ interface ThreatInterface
     public function getDescription();
 
     /**
+     * Get debug
+     * @return array
+     */
+    public function getDebug();
+
+    /**
      * Set threat identification
      * @param string $value
      * @return \MSP\Shield\Api\ThreatInterface
@@ -92,4 +100,11 @@ interface ThreatInterface
      * @return \MSP\Shield\Api\ThreatInterface
      */
     public function setAdditional(array $value);
+
+    /**
+     * Set debug information
+     * @param array $value
+     * @return \MSP\Shield\Api\ThreatInterface
+     */
+    public function setDebug(array $value);
 }

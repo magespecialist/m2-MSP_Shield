@@ -97,9 +97,9 @@ class AppInterfacePlugin
                 if ($logAction) {
                     $this->event->dispatch(LogManagementInterface::EVENT_ACTIVITY, [
                         'module' => 'MSP_Shield',
-                        'message' => 'Impact ' . $res->getScore(),
+                        'message' => $res->getDescription(),
                         'action' => $stopAction ? 'stop' : 'log',
-                        'additional' => serialize($res->getAdditionalInfo()),
+                        'additional' => $res->getAdditionalInfo(),
                     ]);
                 }
 

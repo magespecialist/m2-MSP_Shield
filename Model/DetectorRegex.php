@@ -62,7 +62,6 @@ class DetectorRegex implements DetectorRegexInterface
                     ->setDetector($detector)
                     ->setId($regexGroup['id'])
                     ->setAdditional([
-                        'subject' => $value,
                         'regex' => $matchingRegex,
                     ])
                     ->setReason($regexGroup['reason'])

@@ -20,6 +20,7 @@
 
 namespace MSP\Shield\Model;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use MSP\Shield\Api\DetectorInterface;
 use MSP\Shield\Api\ThreatInterface;
 
@@ -30,6 +31,17 @@ class Threat implements ThreatInterface
     protected $detector = null;
     protected $reason = null;
     protected $additional = null;
+    protected $debug = null;
+
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    public function __construct(ScopeConfigInterface $scopeConfig)
+    {
+        $this->scopeConfig = $scopeConfig;
+    }
 
     /**
      * Get threat identification
@@ -138,6 +150,33 @@ class Threat implements ThreatInterface
     public function setAdditional(array $value)
     {
         $this->additional = $value;
+        return $this;
+    }
+
+    /**
+     * Get debug
+     * @return array
+     */
+    public function getDebug()
+    {
+        if (!!$this->scopeConfig->getValue(ThreatInterface::XML_PATH_DEBUG)) {
+            return $this->debug;
+        }
+
+        return [];
+    }
+
+    /**
+     * Set debug information
+     * @param array $value
+     * @return \MSP\Shield\Api\ThreatInterface
+     */
+    public function setDebug(array $value)
+    {
+        if (!!$this->scopeConfig->getValue(ThreatInterface::XML_PATH_DEBUG)) {
+            $this->debug = $value;
+        }
+
         return $this;
     }
 }

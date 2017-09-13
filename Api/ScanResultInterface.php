@@ -29,6 +29,12 @@ interface ScanResultInterface
     public function getScore();
 
     /**
+     * Get description
+     * @return string
+     */
+    public function getDescription();
+
+    /**
      * Get list of matched threats
      * @return ThreatInterface[]
      */

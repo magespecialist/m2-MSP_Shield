@@ -25,6 +25,7 @@
         <msp_securitysuite_shield>
             <general>
                 <enabled>0</enabled>
+                <debug>0</debug>
                 <min_impact_log>10</min_impact_log>
                 <min_impact_stop>0</min_impact_stop>
                 <check_cookies>0</check_cookies>

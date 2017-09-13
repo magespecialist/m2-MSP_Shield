@@ -207,10 +207,11 @@ class Xss implements DetectorInterface
 
     /**
      * Evaluate an value threat level
+     * @param string $fieldName
      * @param $value
      * @param array $threats
      */
-    protected function evaluateQuery($value, array &$threats)
+    protected function evaluateQuery($fieldName, $value, array &$threats)
     {
         $htmlTags = $this->getHtmlTagsList();
 
@@ -228,7 +229,6 @@ class Xss implements DetectorInterface
                     $threat
                         ->setDetector($this)
                         ->setId(static::RESCODE_SCRIPT_INJECTION)
-                        ->setAdditional(['payload' => $value])
                         ->setReason(__('HTML tags detected'))
                         ->setScore(DetectorInterface::SCORE_CRITICAL_MATCH);
 
@@ -313,7 +313,7 @@ class Xss implements DetectorInterface
         $threats = [];
 
         $encodedQuery = $this->normalizeValue($fieldValue, $threats);
-        $this->evaluateQuery($encodedQuery, $threats);
+        $this->evaluateQuery($fieldName, $encodedQuery, $threats);
 
         return $threats;
     }

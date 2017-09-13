@@ -30,6 +30,11 @@ class ScanResult implements ScanResultInterface
      */
     protected $threats;
 
+    /**
+     * @var string[]
+     */
+    private $descriptions;
+
     protected $score;
 
     /**
@@ -40,8 +45,10 @@ class ScanResult implements ScanResultInterface
     {
         $this->threats = $threats;
         $this->score = 0;
+        $this->descriptions = [];
         foreach ($this->threats as $threat) {
             $this->score += $threat->getScore();
+            $this->descriptions[] = $threat->getDescription();
         }
     }
 
@@ -52,6 +59,15 @@ class ScanResult implements ScanResultInterface
     public function getScore()
     {
         return $this->score;
+    }
+
+    /**
+     * Get score
+     * @return string
+     */
+    public function getDescription()
+    {
+        return implode("\n", $this->descriptions);
     }
 
     /**

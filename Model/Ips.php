@@ -107,13 +107,20 @@ class Ips implements IpsInterface
                         foreach ($scanThreats as $scanThreat) {
                             $additional = [
                                 'threat' => $scanThreat->getAdditional(),
-                                'input' => [
-                                    'value' => utf8_encode($fieldValue),
-                                    'name' => $fieldName,
-                                ],
+                                'field' => $fieldName,
                             ];
+
+                            if (count($scanThreat->getDebug())) {
+                                $additional['debug'] = [
+                                    'threat' => $scanThreat->getDebug(),
+                                    'value' => utf8_encode($fieldValue),
+                                    'field' => $fieldName,
+                                ];
+                            }
+
                             $scanThreat->setAdditional($additional);
                         }
+
                         $threats = array_merge($threats, $scanThreats);
                     }
                 }

@@ -342,7 +342,7 @@ class SqlInjection implements DetectorInterface
                 $threat
                     ->setDetector($this)
                     ->setId(static::RESCODE_SQLI_INJECTION)
-                    ->setAdditional(['query' => $modifiedQuery])
+                    ->setDebug(['query' => $modifiedQuery])
                     ->setReason(__('C comments detected'))
                     ->setScore(DetectorInterface::SCORE_CRITICAL_MATCH);
 
@@ -354,7 +354,7 @@ class SqlInjection implements DetectorInterface
                 $threat
                     ->setDetector($this)
                     ->setId(static::RESCODE_SQLI_INJECTION)
-                    ->setAdditional(['query' => $modifiedQuery])
+                    ->setDebug(['query' => $modifiedQuery])
                     ->setReason(__('Open C comment detected'))
                     ->setScore(DetectorInterface::SCORE_CRITICAL_MATCH);
 
@@ -372,7 +372,7 @@ class SqlInjection implements DetectorInterface
                 $threat
                     ->setDetector($this)
                     ->setId(static::RESCODE_SQLI_INJECTION)
-                    ->setAdditional(['query' => $modifiedQuery])
+                    ->setDebug(['query' => $modifiedQuery])
                     ->setReason(__('Comments detected'))
                     ->setScore($sqlCommentScore);
 
@@ -388,7 +388,7 @@ class SqlInjection implements DetectorInterface
                 $threat
                     ->setDetector($this)
                     ->setId(static::RESCODE_SQLI_INJECTION)
-                    ->setAdditional(['query' => $modifiedQuery])
+                    ->setDebug(['query' => $modifiedQuery])
                     ->setReason(__('Injection payload detected'))
                     ->setScore(DetectorInterface::SCORE_CRITICAL_MATCH);
 
