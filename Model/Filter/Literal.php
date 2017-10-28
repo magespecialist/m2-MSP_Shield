@@ -29,15 +29,17 @@ class Literal implements FilterInterface
      * @param string $fieldName
      * @param string $fieldValue
      * @return boolean
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function runFilter($fieldName, $fieldValue)
     {
         $fieldValue = trim($fieldValue);
 
         // Skip this field if it is only literal
-//        if (!strlen($fieldValue) || preg_match('/^[\s\w\_]+$/', $fieldValue)) {
-//            return FilterInterface::NO_SCAN;
-//        }
+        // if (($fieldValue === "") || preg_match('/^[\s\w\_]+$/', $fieldValue)) {
+        if ($fieldValue === "") {
+            return FilterInterface::NO_SCAN;
+        }
 
         return FilterInterface::NEXT_FILTER;
     }

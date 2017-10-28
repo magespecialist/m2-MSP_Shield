@@ -22,8 +22,6 @@ namespace MSP\Shield\Api;
 
 interface IpsInterface
 {
-
-
     /**
      * Check request
      * @param array $request

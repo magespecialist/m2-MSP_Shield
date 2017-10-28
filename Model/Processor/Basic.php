@@ -29,6 +29,7 @@ class Basic implements ProcessorInterface
      * @param string $fieldName
      * @param string &$fieldValue
      * @return string
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function processValue($fieldName, &$fieldValue)
     {

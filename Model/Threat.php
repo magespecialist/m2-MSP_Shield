@@ -24,14 +24,17 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use MSP\Shield\Api\DetectorInterface;
 use MSP\Shield\Api\ThreatInterface;
 
+/**
+ * @SuppressWarnings(PHPMD.ShortVariables)
+ */
 class Threat implements ThreatInterface
 {
-    protected $id = null;
-    protected $score = null;
-    protected $detector = null;
-    protected $reason = null;
-    protected $additional = null;
-    protected $debug = null;
+    private $id = null;
+    private $score = null;
+    private $detector = null;
+    private $reason = null;
+    private $additional = null;
+    private $debug = null;
 
     /**
      * @var ScopeConfigInterface

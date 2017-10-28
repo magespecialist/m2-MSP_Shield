@@ -2,7 +2,6 @@
 
 namespace MSP\Shield\Model;
 
-use Magento\Framework\Registry;
 use MSP\Shield\Api\DetectorInterface;
 use MSP\Shield\Api\FilterInterface;
 use MSP\Shield\Api\IpsInterface;
@@ -10,20 +9,26 @@ use MSP\Shield\Api\ProcessorInterface;
 use MSP\Shield\Api\ScanResultInterface;
 use MSP\Shield\Api\ScanResultInterfaceFactory;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariables)
+ */
 class Ips implements IpsInterface
 {
     /**
      * @var DetectorInterface[]
      */
     private $detectors;
+
     /**
      * @var FilterInterface[]
      */
     private $filters;
+
     /**
      * @var ProcessorInterface[]
      */
     private $processors;
+
     /**
      * @var ScanResultInterfaceFactory
      */
@@ -34,8 +39,8 @@ class Ips implements IpsInterface
         $processors = [],
         $filters = [],
         $detectors = []
-    )
-    {
+    ) {
+    
         $this->detectors = $detectors;
         $this->filters = $filters;
         $this->processors = $processors;
@@ -47,8 +52,9 @@ class Ips implements IpsInterface
      * @param $fieldName
      * @param $fieldValue
      * @param array &$values = []
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
-    protected function runProcessors($fieldName, $fieldValue, array &$values = [])
+    private function runProcessors($fieldName, $fieldValue, array &$values = [])
     {
         if ($fieldValue) {
             if (is_string($fieldValue)) {
@@ -80,7 +86,7 @@ class Ips implements IpsInterface
             }
 
             if (is_array($fieldValue)) {
-                foreach ($fieldValue as $k => &$v) {
+                foreach ($fieldValue as &$v) {
                     $this->runProcessors($fieldName, $v, $values);
                 }
             }
@@ -93,24 +99,24 @@ class Ips implements IpsInterface
      * @param $fieldValue
      * @param array &$threats
      */
-    protected function runDetectors($fieldName, $fieldValue, &$threats)
+    private function runDetectors($fieldName, $fieldValue, &$threats)
     {
         if (is_array($fieldValue)) {
-            foreach ($fieldValue as $k => $v) {
+            foreach ($fieldValue as $v) {
                 $this->runDetectors($fieldName, $v, $threats);
             }
         } else {
             if ($this->shouldScan($fieldName, $fieldValue)) {
                 foreach ($this->detectors as $detector) {
                     $scanThreats = $detector->scanRequest($fieldName, $fieldValue);
-                    if (count($scanThreats)) {
+                    if (!empty($scanThreats)) {
                         foreach ($scanThreats as $scanThreat) {
                             $additional = [
                                 'threat' => $scanThreat->getAdditional(),
                                 'field' => $fieldName,
                             ];
 
-                            if (count($scanThreat->getDebug())) {
+                            if (!empty($scanThreat->getDebug())) {
                                 $additional['debug'] = [
                                     'threat' => $scanThreat->getDebug(),
                                     'value' => utf8_encode($fieldValue),
@@ -134,7 +140,7 @@ class Ips implements IpsInterface
      * @param $fieldValue
      * @return boolean
      */
-    protected function shouldScan($fieldName, $fieldValue)
+    private function shouldScan($fieldName, $fieldValue)
     {
         foreach ($this->filters as $filter) {
             $res = $filter->runFilter($fieldName, $fieldValue);

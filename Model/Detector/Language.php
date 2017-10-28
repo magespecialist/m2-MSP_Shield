@@ -25,6 +25,9 @@ use MSP\Shield\Api\DetectorRegexInterface;
 use MSP\Shield\Api\ThreatInterface;
 use MSP\Shield\Api\ThreatInterfaceFactory;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariables)
+ */
 class Language implements DetectorInterface
 {
     const CODE = 'language';
@@ -34,6 +37,7 @@ class Language implements DetectorInterface
      * @var DetectorRegexInterface
      */
     private $detectorRegex;
+
     /**
      * @var ThreatInterfaceFactory
      */
@@ -42,8 +46,7 @@ class Language implements DetectorInterface
     public function __construct(
         DetectorRegexInterface $detectorRegex,
         ThreatInterfaceFactory $threatInterfaceFactory
-    )
-    {
+    ) {
         $this->detectorRegex = $detectorRegex;
         $this->threatInterfaceFactory = $threatInterfaceFactory;
     }
@@ -54,6 +57,8 @@ class Language implements DetectorInterface
      * @param string $fieldValue
      * @param array $threats
      * @return string
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
+     * @SuppressWarnings("PHPMD.NPathComplexity")
      */
     public function encodeQuery($fieldName, $fieldValue, &$threats)
     {
@@ -134,13 +139,12 @@ class Language implements DetectorInterface
 
     /**
      * Evaluate an encoded query threat level
-     * @param $encodedQuery
+     * @param string $encodedQuery
      * @param array $threats
      */
-    protected function evaluateEncodedQuery($encodedQuery, array &$threats)
+    private function evaluateEncodedQuery($encodedQuery, array &$threats)
     {
-        if (
-            (strlen($encodedQuery) > 2)
+        if ((strlen($encodedQuery) > 2)
         ) {
             if (preg_match('/.*F.*M.*P/', $encodedQuery) ||
                 preg_match('/.*F.*L.*P/', $encodedQuery) ||

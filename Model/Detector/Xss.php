@@ -24,11 +24,11 @@ use Magento\Framework\App\ResourceConnection;
 use MSP\Shield\Api\DetectorInterface;
 use MSP\Shield\Api\DetectorRegexInterface;
 use MSP\Shield\Api\ThreatInterface;
-use MSP\Shield\Model\CacheType;
 use MSP\Shield\Api\ThreatInterfaceFactory;
-use PhpMyAdmin\SqlParser\Context;
-use PhpMyAdmin\SqlParser\Token;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariables)
+ */
 class Xss implements DetectorInterface
 {
     const CODE = 'xss';
@@ -53,8 +53,7 @@ class Xss implements DetectorInterface
         DetectorRegexInterface $detectorRegex,
         ThreatInterfaceFactory $threatInterfaceFactory,
         ResourceConnection $resourceConnection
-    )
-    {
+    ) {
         $this->detectorRegex = $detectorRegex;
         $this->threatInterfaceFactory = $threatInterfaceFactory;
         $this->resourceConnection = $resourceConnection;
@@ -70,21 +69,11 @@ class Xss implements DetectorInterface
     }
 
     /**
-     * Normalize value
-     * @param $value
-     * @param array $threats
-     * @return string
-     */
-    protected function normalizeValue($value, array &$threats)
-    {
-        return $value;
-    }
-
-    /**
      * Return a list of html tags
      * @return array
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
-    protected function getHtmlTagsList()
+    private function getHtmlTagsList()
     {
         return [
             "!DOCTYPE",
@@ -210,8 +199,9 @@ class Xss implements DetectorInterface
      * @param string $fieldName
      * @param $value
      * @param array $threats
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
-    protected function evaluateQuery($fieldName, $value, array &$threats)
+    private function evaluateQuery($fieldName, $value, array &$threats)
     {
         $htmlTags = $this->getHtmlTagsList();
 
@@ -263,7 +253,8 @@ class Xss implements DetectorInterface
                     'location\\s*\\.\\s*href' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     '\\.to(\\w{3,5})string\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     'alert\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
-                    '(?:this|window|top|parent|frames|self|content)\\s*\\.\\s*(?:location|document)' => DetectorInterface::SCORE_CRITICAL_MATCH,
+                    '(?:this|window|top|parent|frames|self|content)\\s*\\.\\s*(?:location|document)' =>
+                        DetectorInterface::SCORE_CRITICAL_MATCH,
                     'document\\s*\\.\\s*\\w+' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     'getelementby(?:names|id|classname|tag|tagname)\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
                     'queryselector(?:all)?\\s*\\(' => DetectorInterface::SCORE_CRITICAL_MATCH,
@@ -312,8 +303,7 @@ class Xss implements DetectorInterface
     {
         $threats = [];
 
-        $encodedQuery = $this->normalizeValue($fieldValue, $threats);
-        $this->evaluateQuery($fieldName, $encodedQuery, $threats);
+        $this->evaluateQuery($fieldName, $fieldValue, $threats);
 
         return $threats;
     }

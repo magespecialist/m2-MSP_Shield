@@ -23,11 +23,9 @@ namespace MSP\Shield\Plugin;
 use Magento\Framework\App\State;
 use Magento\Framework\AppInterface;
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\Json\EncoderInterface;
+use MSP\SecuritySuiteCommon\Api\AlertInterface;
 use MSP\SecuritySuiteCommon\Api\LockDownInterface;
-use MSP\SecuritySuiteCommon\Api\LogManagementInterface;
 use MSP\Shield\Api\ShieldInterface;
-use Magento\Framework\Event\ManagerInterface as EventInterface;
 
 class AppInterfacePlugin
 {
@@ -47,41 +45,39 @@ class AppInterfacePlugin
     private $shield;
 
     /**
-     * @var EventInterface
-     */
-    private $event;
-
-    /**
-     * @var EncoderInterface
-     */
-    private $encoder;
-
-    /**
      * @var LockDownInterface
      */
     private $lockDown;
 
+    /**
+     * @var AlertInterface
+     */
+    private $alert;
 
     public function __construct(
         RequestInterface $request,
         State $state,
         ShieldInterface $shield,
-        EncoderInterface $encoder,
-        EventInterface $event,
+        AlertInterface $alert,
         LockDownInterface $lockDown
     ) {
         $this->request = $request;
         $this->state = $state;
         $this->shield = $shield;
-        $this->event = $event;
-        $this->encoder = $encoder;
         $this->lockDown = $lockDown;
+        $this->alert = $alert;
     }
 
+    /**
+     * @param AppInterface $subject
+     * @param \Closure $proceed
+     * @return \Magento\Framework\App\Response\Http|mixed
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
+     * @SuppressWarnings("PHPMD.CyclomaticComplexity")
+     */
     public function aroundLaunch(AppInterface $subject, \Closure $proceed)
     {
         // We are creating a plugin for AppInterface to make sure we can perform an IDS scan early in the code.
-        // A predispatch observer is not an option.
         if ($this->shield->isEnabled() && $this->shield->shouldScan()) {
             $res = $this->shield->scanRequest();
 
@@ -95,12 +91,14 @@ class AppInterfacePlugin
                     );
 
                 if ($logAction) {
-                    $this->event->dispatch(LogManagementInterface::EVENT_ACTIVITY, [
-                        'module' => 'MSP_Shield',
-                        'message' => $res->getDescription(),
-                        'action' => $stopAction ? 'stop' : 'log',
-                        'additional' => $res->getAdditionalInfo(),
-                    ]);
+                    $this->alert->event(
+                        'MSP_Shield',
+                        $res->getDescription(),
+                        AlertInterface::LEVEL_SECURITY_ALERT,
+                        null,
+                        $stopAction ? AlertInterface::ACTION_LOCKDOWN : AlertInterface::ACTION_LOG,
+                        $res->getAdditionalInfo()
+                    );
                 }
 
                 if ($stopAction) {

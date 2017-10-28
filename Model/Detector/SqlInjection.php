@@ -21,6 +21,8 @@
 namespace MSP\Shield\Model\Detector;
 
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\Json\DecoderInterface;
+use Magento\Framework\Json\EncoderInterface;
 use MSP\Shield\Api\DetectorInterface;
 use MSP\Shield\Api\DetectorRegexInterface;
 use MSP\Shield\Api\ThreatInterface;
@@ -29,6 +31,10 @@ use MSP\Shield\Api\ThreatInterfaceFactory;
 use PhpMyAdmin\SqlParser\Context;
 use PhpMyAdmin\SqlParser\Token;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariables)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ */
 class SqlInjection implements DetectorInterface
 {
     const CODE = 'sql_injection';
@@ -39,10 +45,10 @@ class SqlInjection implements DetectorInterface
     const CACHE_KEY_MYSQL_KEYWORDS = 'sqli/mysql_keywords';
     const CACHE_KEY_MYSQL_FIELDS = 'sqli/mysql_fields';
 
-    protected $magentoTables = null;
-    protected $mysqlFunctions = null;
-    protected $mysqlKeywords = null;
-    protected $mysqlFields = null;
+    private $magentoTables = null;
+    private $mysqlFunctions = null;
+    private $mysqlKeywords = null;
+    private $mysqlFields = null;
 
     /**
      * @var DetectorRegexInterface
@@ -64,17 +70,30 @@ class SqlInjection implements DetectorInterface
      */
     private $resourceConnection;
 
+    /**
+     * @var EncoderInterface
+     */
+    private $encoder;
+
+    /**
+     * @var DecoderInterface
+     */
+    private $decoder;
+
     public function __construct(
         DetectorRegexInterface $detectorRegex,
         ThreatInterfaceFactory $threatInterfaceFactory,
+        EncoderInterface $encoder,
+        DecoderInterface $decoder,
         CacheType $cacheType,
         ResourceConnection $resourceConnection
-    )
-    {
+    ) {
         $this->detectorRegex = $detectorRegex;
         $this->threatInterfaceFactory = $threatInterfaceFactory;
         $this->cacheType = $cacheType;
         $this->resourceConnection = $resourceConnection;
+        $this->encoder = $encoder;
+        $this->decoder = $decoder;
     }
 
     /**
@@ -90,20 +109,22 @@ class SqlInjection implements DetectorInterface
      * Return an array of all the magento table names
      * @return array
      */
-    protected function getMagentoTables()
+    private function getMagentoTables()
     {
-        if (is_null($this->magentoTables)) {
+        if ($this->magentoTables === null) {
             if ($tables = $this->cacheType->load(static::CACHE_KEY_MAGENTO_TABLES)) {
-                $this->magentoTables = unserialize($tables);
+                $this->magentoTables = $this->decoder->decode($tables);
             } else {
                 $tableNames = [];
                 $connection = $this->resourceConnection->getConnection();
+                // @codingStandardsIgnoreStart
                 $qry = $connection->query('show tables');
+                // @codingStandardsIgnoreEnd
                 while ($tableName = $qry->fetchColumn(0)) {
                     $tableNames[mb_strtolower($tableName)] = 1;
                 }
 
-                $this->cacheType->save(serialize($tableNames), static::CACHE_KEY_MAGENTO_TABLES);
+                $this->cacheType->save($this->encoder->encode($tableNames), static::CACHE_KEY_MAGENTO_TABLES);
                 $this->magentoTables = $tableNames;
             }
         }
@@ -115,11 +136,11 @@ class SqlInjection implements DetectorInterface
      * Get a list of MySQL functions
      * @return array
      */
-    protected function getMysqlFunctions()
+    private function getMysqlFunctions()
     {
-        if (is_null($this->mysqlFunctions)) {
+        if ($this->mysqlFunctions === null) {
             if ($functions = $this->cacheType->load(static::CACHE_KEY_MYSQL_FUNCTION)) {
-                $this->mysqlFunctions = unserialize($functions);
+                $this->mysqlFunctions = $this->decoder->decode($functions);
             } else {
                 $mysqlFunctions = [];
 
@@ -130,7 +151,7 @@ class SqlInjection implements DetectorInterface
                     }
                 }
 
-                $this->cacheType->save(serialize($mysqlFunctions), static::CACHE_KEY_MYSQL_FUNCTION);
+                $this->cacheType->save($this->encoder->encode($mysqlFunctions), static::CACHE_KEY_MYSQL_FUNCTION);
                 $this->mysqlFunctions = $mysqlFunctions;
             }
         }
@@ -142,11 +163,11 @@ class SqlInjection implements DetectorInterface
      * Get a list of MySQL keywords
      * @return array
      */
-    protected function getMysqlKeywords()
+    private function getMysqlKeywords()
     {
-        if (is_null($this->mysqlKeywords)) {
+        if ($this->mysqlKeywords === null) {
             if ($keywords = $this->cacheType->load(static::CACHE_KEY_MYSQL_KEYWORDS)) {
-                $this->mysqlKeywords = unserialize($keywords);
+                $this->mysqlKeywords = $this->decoder->decode($keywords);
             } else {
                 $mysqlKeywords = [];
 
@@ -157,7 +178,7 @@ class SqlInjection implements DetectorInterface
                     }
                 }
 
-                $this->cacheType->save(serialize($mysqlKeywords), static::CACHE_KEY_MYSQL_KEYWORDS);
+                $this->cacheType->save($this->encoder->encode($mysqlKeywords), static::CACHE_KEY_MYSQL_KEYWORDS);
                 $this->mysqlKeywords = $mysqlKeywords;
             }
         }
@@ -169,18 +190,20 @@ class SqlInjection implements DetectorInterface
      * Get a list of all database field names
      * @return array
      */
-    protected function getMagentoFieldNames()
+    private function getMagentoFieldNames()
     {
-        if (is_null($this->mysqlFields)) {
+        if ($this->mysqlFields === null) {
             if ($names = $this->cacheType->load(static::CACHE_KEY_MYSQL_FIELDS)) {
-                $this->mysqlFields = unserialize($names);
+                $this->mysqlFields = $this->decoder->decode($names);
             } else {
                 $mysqlFields = [];
 
                 $connection = $this->resourceConnection->getConnection();
                 $tables = $this->getMagentoTables();
-                foreach ($tables as $table => $x) {
-                    $fields = $connection->describeTable($table);
+
+                $tableNames = array_keys($tables);
+                foreach ($tableNames as $tableName) {
+                    $fields = $connection->describeTable($tableName);
                     foreach ($fields as $field) {
                         $mysqlFields[mb_strtolower($field['COLUMN_NAME'])] = 1;
                     }
@@ -188,7 +211,7 @@ class SqlInjection implements DetectorInterface
 
                 $mysqlFields = array_unique($mysqlFields);
 
-                $this->cacheType->save(serialize($mysqlFields), static::CACHE_KEY_MYSQL_FIELDS);
+                $this->cacheType->save($this->encoder->encode($mysqlFields), static::CACHE_KEY_MYSQL_FIELDS);
                 $this->mysqlFields = $mysqlFields;
             }
         }
@@ -201,7 +224,7 @@ class SqlInjection implements DetectorInterface
      * @param string $token
      * @return bool
      */
-    protected function getIsTableName($token)
+    private function isTableName($token)
     {
         return array_key_exists(mb_strtolower($token), $this->getMagentoTables());
     }
@@ -211,7 +234,7 @@ class SqlInjection implements DetectorInterface
      * @param string $token
      * @return bool
      */
-    protected function getIsFieldName($token)
+    private function isFieldName($token)
     {
         return array_key_exists(mb_strtolower($token), $this->getMagentoFieldNames());
     }
@@ -221,7 +244,7 @@ class SqlInjection implements DetectorInterface
      * @param string $token
      * @return bool
      */
-    protected function getIsMysqlKeyword($token)
+    private function isMysqlKeyword($token)
     {
         return array_key_exists(mb_strtolower($token), $this->getMysqlKeywords());
     }
@@ -231,18 +254,18 @@ class SqlInjection implements DetectorInterface
      * @param string $token
      * @return bool
      */
-    protected function getIsMysqlFunction($token)
+    private function isMysqlFunction($token)
     {
         return array_key_exists(mb_strtolower($token), $this->getMysqlFunctions());
     }
 
     /**
      * Encode query
-     * @param $query
-     * @param array $threats
+     * @param string $query
      * @return string
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
-    protected function encodeQuery($query, array &$threats)
+    private function encodeQuery($query)
     {
         $dbOperations = [
             'select', 'insert', 'update', 'drop', 'load data', 'truncate', 'alter',
@@ -265,27 +288,27 @@ class SqlInjection implements DetectorInterface
         $tokens = preg_split('/(\b)/', $query, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
         foreach ($tokens as $token) {
             $token = mb_strtolower(trim($token));
-            if (!strlen($token) || in_array($token, ['.'])) {
+            if (($token === '') || in_array($token, ['.'])) {
                 continue;
             }
 
             if (in_array($token, ['+', '=', '#', ')', '(', 'x', ',', ';'])) {
                 $encodedQuery[] = $token;
-            } else if (is_numeric($token)) {
+            } elseif (is_numeric($token)) {
                 $encodedQuery[] = 'x';
-            } else if (in_array($token, $tableCreate)) {
+            } elseif (in_array($token, $tableCreate)) {
                 $encodedQuery[] = 'c';
-            } else if (in_array($token, $dbOperations)) {
+            } elseif (in_array($token, $dbOperations)) {
                 $encodedQuery[] = 's';
-            } else if (in_array($token, $tableOperationsOptions)) {
+            } elseif (in_array($token, $tableOperationsOptions)) {
                 $encodedQuery[] = 'o';
-            } else if ($this->getIsMysqlFunction($token)) {
+            } elseif ($this->isMysqlFunction($token)) {
                 $encodedQuery[] = 'f';
-            } else if ($this->getIsTableName($token)) {
+            } elseif ($this->isTableName($token)) {
                 $encodedQuery[] = 't';
-            } else if ($this->getIsFieldName($token)) {
+            } elseif ($this->isFieldName($token)) {
                 $encodedQuery[] = 'x';
-            } else if ($this->getIsMysqlKeyword($token)) {
+            } elseif ($this->isMysqlKeyword($token)) {
                 $encodedQuery[] = 'k';
             } else {
                 $encodedQuery[] = 0;
@@ -303,8 +326,11 @@ class SqlInjection implements DetectorInterface
      * @param string $originalQuery
      * @param array $scenariosThreats
      * @return array
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
-    protected function getNormalizedQueryScenarios($originalQuery, array &$scenariosThreats)
+    private function getNormalizedQueryScenarios($originalQuery, array &$scenariosThreats)
     {
         $scenarios = [
             $originalQuery
@@ -378,7 +404,7 @@ class SqlInjection implements DetectorInterface
 
                 $threats[] = $threat;
 
-                $modifiedQuery = preg_replace('/(\-\-|#).*$/', "", $modifiedQuery, -1, $otherCommentsCount);
+                $modifiedQuery = preg_replace('/(\-\-|#).*$/', "", $modifiedQuery, -1);
             }
 
             if (preg_match('/\b0x[0-9a-f]{32,}/i', $modifiedQuery) ||
@@ -403,7 +429,11 @@ class SqlInjection implements DetectorInterface
             $modifiedQuery = str_replace(['(', '[', '{'], ' ( ', $modifiedQuery);
             $modifiedQuery = str_replace([')', ']', '}'], ' ) ', $modifiedQuery);
             $modifiedQuery = str_ireplace(['&&', '||'], ' # ', $modifiedQuery);
-            $modifiedQuery = str_replace(['<<', '>>', '&', '|', '^', '~', '+', '-', '%', '*', '/'], ' + ', $modifiedQuery);
+            $modifiedQuery = str_replace(
+                ['<<', '>>', '&', '|', '^', '~', '+', '-', '%', '*', '/'],
+                ' + ',
+                $modifiedQuery
+            );
             $modifiedQuery = str_ireplace(['<', '>', '=', '<=', '>=', '==', '!=', '<=>'], ' = ', $modifiedQuery);
             $modifiedQuery = str_ireplace([' is null ', ' is not null '], ' =x ', $modifiedQuery);
 
@@ -417,8 +447,7 @@ class SqlInjection implements DetectorInterface
 
             $scenariosThreats[$modifiedQuery] = $threats;
 
-            if (
-                (mb_strpos($modifiedQuery, "'") === false) &&
+            if ((mb_strpos($modifiedQuery, "'") === false) &&
                 (mb_strpos($modifiedQuery, '"') === false) &&
                 (trim($modifiedQuery) != 'x')
             ) {
@@ -434,7 +463,7 @@ class SqlInjection implements DetectorInterface
      * @param $encodedQuery
      * @param array $threats
      */
-    protected function evaluateEncodedQuery($encodedQuery, array &$threats)
+    private function evaluateEncodedQuery($encodedQuery, array &$threats)
     {
         // Remove spaces
         $encodedQuery = str_replace(' ', '', $encodedQuery);
@@ -466,7 +495,6 @@ class SqlInjection implements DetectorInterface
                 'id' => static::RESCODE_SQLI_INJECTION,
                 'reason' => __('SQL operations injection'),
                 'regex' => [
-//                    'f' => DetectorInterface::SCORE_LOW_PROBABILITY_MATCH, // MySQL functions without opening parenthesis
                     'f\\(' => DetectorInterface::SCORE_CRITICAL_MATCH, // MySQL functions with opening parenthesis
 
                     's(?:o|k){0,8}y' => DetectorInterface::SCORE_CRITICAL_MATCH, // insert into tablename
@@ -513,6 +541,7 @@ class SqlInjection implements DetectorInterface
      * @param string $fieldName
      * @param string $fieldValue
      * @return ThreatInterface[]
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function scanRequest($fieldName, $fieldValue)
     {
@@ -531,7 +560,7 @@ class SqlInjection implements DetectorInterface
         $scenariosThreats = [];
         $scenarios = $this->getNormalizedQueryScenarios($fieldValue, $scenariosThreats);
         foreach ($scenarios as $scenario) {
-            $encodedQuery = $this->encodeQuery($scenario, $scenariosThreats[$scenario]);
+            $encodedQuery = $this->encodeQuery($scenario);
             $this->evaluateEncodedQuery($encodedQuery, $scenariosThreats[$scenario]);
         }
 

@@ -28,14 +28,14 @@ class ScanResult implements ScanResultInterface
     /**
      * @var ThreatInterface[]
      */
-    protected $threats;
+    private $threats;
 
     /**
      * @var string[]
      */
     private $descriptions;
 
-    protected $score;
+    private $score;
 
     /**
      * ScanResultInterface constructor.
@@ -46,6 +46,7 @@ class ScanResult implements ScanResultInterface
         $this->threats = $threats;
         $this->score = 0;
         $this->descriptions = [];
+
         foreach ($this->threats as $threat) {
             $this->score += $threat->getScore();
             $this->descriptions[] = $threat->getDescription();

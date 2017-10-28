@@ -23,6 +23,9 @@ namespace MSP\Shield\Model;
 use MSP\Shield\Api\DetectorRegexInterface;
 use MSP\Shield\Api\ThreatInterfaceFactory;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 class DetectorRegex implements DetectorRegexInterface
 {
     /**

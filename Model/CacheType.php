@@ -27,7 +27,6 @@ class CacheType extends TagScope
 {
     const TYPE_IDENTIFIER = 'msp_shield';
     const CACHE_TAG = 'MSP_SHIELD_TAG';
-
     /**
      * @param FrontendPool $cacheFrontendPool
      */

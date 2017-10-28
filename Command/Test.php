@@ -43,7 +43,7 @@ class Test extends Command
     protected function configure()
     {
         $this->setName('msp:shield:test');
-        $this->setDescription('Test a string over detector');
+        $this->setDescription('Command line tester');
 
         $this->addArgument('type', InputArgument::REQUIRED, __('Type (ex.: COOKIE, GET, POST)'));
         $this->addArgument('name', InputArgument::REQUIRED, __('Parameter name'));
@@ -52,17 +52,22 @@ class Test extends Command
         parent::configure();
     }
 
+    /**
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $area = strtoupper($input->getArgument('type'));
-        $k = $input->getArgument('name');
-        $v = $input->getArgument('value');
+        $paramName = $input->getArgument('name');
+        $paramValue = $input->getArgument('value');
 
-        $scanResult = $this->ips->scanRequest([$area => [$k => $v]]);
+        $scanResult = $this->ips->scanRequest([$area => [$paramName => $paramValue]]);
         foreach ($scanResult->getThreats() as $threat) {
             $output->writeln($threat->getDescription());
             $output->writeln("-----------------------------------------------");
+            // @codingStandardsIgnoreStart
             $output->writeln(print_r($threat->getAdditional(), true));
+            // @codingStandardsIgnoreEnd
             $output->writeln("");
         }
     }

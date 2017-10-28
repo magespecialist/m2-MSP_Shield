@@ -37,8 +37,8 @@ class Unpack implements ProcessorInterface
     public function __construct(
         DecoderInterface $decoder,
         array $skip = []
-    )
-    {
+    ) {
+    
         $this->decoder = $decoder;
         $this->skip = $skip;
     }
@@ -48,6 +48,9 @@ class Unpack implements ProcessorInterface
      * @param string $fieldName
      * @param string &$fieldValue
      * @return string
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
+     * @SuppressWarnings("PHPMD.NPathComplexity")
+     * @SuppressWarnings("PHPMD.CyclomaticComplexity")
      */
     public function processValue($fieldName, &$fieldValue)
     {
@@ -56,25 +59,27 @@ class Unpack implements ProcessorInterface
         }
 
         // Check if it is an html encoded string
+        // @codingStandardsIgnoreStart
         $res = html_entity_decode($fieldValue, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // @codingStandardsIgnoreEnd
         if ($res !== $fieldValue) {
             $fieldValue = $res;
             return ProcessorInterface::RES_REPLACE;
         }
 
         // Check if it is a base64 string
-        if (
-            preg_match('/^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/', $fieldValue)
+        if (preg_match('/^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/', $fieldValue)
         ) {
+            // @codingStandardsIgnoreStart
             if ($res = base64_decode($fieldValue)) {
                 $fieldValue = $res;
                 return ProcessorInterface::RES_SPAWN;
             }
+            // @codingStandardsIgnoreEnd
         }
 
         // Check JSON format
-        if (
-            (strlen($fieldValue) > 3) &&
+        if ((strlen($fieldValue) > 3) &&
             ($fieldValue[0] == '{') ||
             ($fieldValue[0] == '[') ||
             ($fieldValue[0] == '"')
@@ -91,17 +96,6 @@ class Unpack implements ProcessorInterface
         if ($urlDecoded !== $fieldValue) {
             $fieldValue = $urlDecoded;
             return ProcessorInterface::RES_SPAWN;
-        }
-
-        // Check PHP serialized variable
-        if (preg_match('/^\w:\d+:/', $fieldValue)) {
-            try {
-                if ($res = unserialize($fieldValue)) {
-                    $fieldValue = $res;
-                    return ProcessorInterface::RES_REPLACE;
-                }
-            } catch (\Exception $e) {
-            }
         }
 
         return ProcessorInterface::RES_NO_MATCH;
