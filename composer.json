@@ -2,7 +2,7 @@
     "name": "msp/shield",
     "description": "Advanced Intrusion Prevention System for Magento2 - Member of MageSpecialist SecuritySuite",
     "require": {
-        "php": "^7.0|^7.1",
+        "php": ">=7.0",
         "msp/security-suite-common": "^2.0",
         "phpmyadmin/sql-parser": "^4.1"
     },
